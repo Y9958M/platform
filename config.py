@@ -11,31 +11,19 @@ SID = 5
 
 # 5本机
 if SID == 5:
-
-    VER = 240201
-    PROJECT = "YM"
     ADMIN = [18550994992]
-    CLIENT ="Dev:10.56"
-    MESSAGE = {
-        "code": 500,
-        "sid":  SID,
-        "count":  0,
-        "msg":  '',
-        "project":PROJECT,
-        "client":CLIENT
-    }
     DB_LINK = {
         'YM':{
             "USE" : {},
             "TYPE": "MYSQL",
-            "HOST": "localhost",
+            "HOST": "127.0.0.1",
             "PORT": 3306,
             "USER": "root",
             "PWD": "shtm2023",
         },
         'REDIS': {
             "DB": SID,
-            "HOST": "localhost",
+            "HOST": "127.0.0.1",
             "PWD": "",
             "PORT": 6378,
             "TYPE": "REDIS"
@@ -50,11 +38,19 @@ if SID == 5:
         },
         'PLM':{
             'TYPE':'MYSQL',
-            'HOST':'localhost',
+            'HOST':'127.0.0.1',
             'PORT':3310,
             'DB'  :'plm',
             'USER':'root',
             'PWD' :'4197'
+        }
+    }
+    PF_LINK = {
+        'DH':{
+            "HOST":"192.168.10.222",
+            "PORT":9527,
+            "USER":"admin",
+            "PWD" :"123456"
         }
     }
 

@@ -1,6 +1,7 @@
 
-from main import SID,MESSAGE,HandleLog
+from .cmm import SID,MESSAGE,ADMIN,HandleLog
 from .fun import *
+
 
 log = HandleLog(__name__,i_c_level=10,i_f_level=20)
 
@@ -46,25 +47,21 @@ def commonQueryMain(j_args)->dict:
         
     j_.clear()  # check sql_context 防注入检查'
     j_.update(checkSqlContext(sql_context))
-    if  j_['code'] > 200:
-        j_['sqlid'] = sqlid
-        return j_
+    if  j_['code'] > 200:return j_.update({'sqlid':sqlid})
 
     j_.clear()  # 检查 DB_LINK 连接
     j_.update(ckDbLink(s_project))
-    if  j_['code'] >200:
-        j_['sqlid'] = sqlid
-        return j_
+    if  j_['code'] >200:return j_.update({'sqlid':sqlid})
     else:j_db_info = j_['data']
 
-    # 处理 sql_context    
-    l_sql = sqlContextToList(sql_context)
- 
+    j_.clear()  # 处理 sql_context
+    j_.update(sqlContextToList(sql_context))
+    if  j_['code'] >200:return j_.update({'sqlid':sqlid})
+    else:l_sql = j_['data']
+
     j_.clear()  # 查询拼装
     j_.update(swapContent(l_sql,j_args))
-    if  j_['code'] >200:
-        j_['sqlid'] = sqlid
-        return j_
+    if  j_['code'] >200:return j_.update({'sqlid':sqlid})
     else:s_sql = j_['data']
 
     if   j_db_info['TYPE'] == 'MYSQL':
@@ -107,25 +104,21 @@ def commonUpdateMain(j_args):
  
     j_.clear()  # 检查 DB_LINK 连接
     j_.update(ckDbLink(s_project))
-    if j_['code'] >200:
-        j_['sqlid'] = sqlid
-        return j_
+    if j_['code'] >200:return j_.update({'sqlid':sqlid})
     else:j_db_info = j_['data']
 
     j_.clear()  # 防止超范围的更新
     j_.update(ckUpInfo(sid,j_db_info['PROJECT'],j_db_info['DB']))
-    if j_['code'] >200:
-        j_['sqlid'] = sqlid
-        return j_
+    if j_['code'] >200:return j_.update({'sqlid':sqlid})
 
-    # 处理 sql_context    
-    l_sql = sqlContextToList(sql_context)
+    j_.clear()  # 处理 sql_context
+    j_.update(sqlContextToList(sql_context))
+    if  j_['code'] >200:return j_.update({'sqlid':sqlid})
+    else:l_sql = j_['data']
 
     j_.clear()  # 查询拼装
     j_.update(swapContent(l_sql,j_args))
-    if j_['code'] >200:
-        j_['sqlid'] = sqlid
-        return j_
+    if j_['code'] >200:return j_.update({'sqlid':sqlid})
     else:s_sql = j_['data']
 
     if j_db_info['TYPE'] == 'MYSQL':
@@ -146,8 +139,8 @@ def commonRedisMain(j_args:dict):
     log.debug(f">> {message['fun']} 通用缓存数据(存 入参 KEY 字典 过期时间) \n{j_args}")
     # 检查入参
     j_ = dict()
-    if checkCommonRedisArgs(j_args):
-        message.update({'msg':'need rs_name'})
+    if 'rs_name' not in j_args:
+        message.update({'msg':'need rs_name 0'})
         return message
     else:
         project_name=   j_args['project_name'] if 'project_name' in j_args else 'REDIS'
@@ -162,7 +155,7 @@ def commonRedisMain(j_args:dict):
         data_list = []
         log.debug("SQLID 会调用通用查询")
         if 'sqlid' not in j_args:
-            message.update({'msg':"未传入sql_id"})
+            message.update({'msg':"未传入sqlid"})
             return message
         j_ds = {}
         j_ds = commonQueryMain(j_args)
@@ -203,4 +196,79 @@ def commonRedisMain(j_args:dict):
         return message
 
 
+# 用户登录
+def authLoginMain(userid):
+    message = MESSAGE.copy()
+    message['fun'] = 'authLoginMain'
+    log.debug(f">>> {message['fun']} 查手机号 isUserExist {userid}")
+    j_ = dict()
 
+    j_ = checkPhone(userid)
+    if j_['code'] > 200:
+        return j_
+
+    return login(userid)
+
+
+# 【菜单】权限 
+def authMenuListMain(userid):
+    message = MESSAGE.copy()
+    message['fun'] = 'authMenuListMain'
+    log.debug(f">>> {message['fun']} 菜单相关权限 {userid} ")
+    j_ = dict()
+
+    log.debug("ONE 【菜单】先查 用户 USER_NO 是否管理员")
+
+    if int(userid) in ADMIN:
+        log.warning(userid,"管理员 【菜单】")
+        return menuListPermission()
+
+    log.debug(userid,"TWO 【菜单】通用 用户 角色关系表 查出用户的所有角色 ")
+    j_.clear()
+    j_ = rolesList(userid)
+    if j_['code'] > 200:return j_
+    else:
+        l_role = j_['l_role']
+
+    log.debug(l_role,"THREE 【菜单】[定制] 角色下所有的 菜单相关权限 ")
+    j_.clear()
+    j_ = menuIds(l_role)
+    if j_['code'] > 200:return j_
+    else:
+        s_ids = str(j_['data'])[1:-1]
+    log.debug(s_ids,"FOUR 【菜单】 返回结果 定制")
+    return menuListPermission(s_ids)  
+
+
+# 【按钮】权限
+def authUserButtonMain(userid):
+    message = MESSAGE.copy()
+    message['fun'] = 'authUserButtonMain'
+    log.debug(f">>> {message['fun']} ONE 【按钮】先查 用户 userid 是否管理员")
+
+    if int(userid) in ADMIN:
+        log.warning(userid,"管理员 【按钮】")
+        return buttonPermission('')
+
+    log.debug(userid,"TWO 【按钮】通用 用户 角色关系表 查出用户的所有角色 ")
+    j_ = dict()
+    j_ = rolesList(userid)
+    if j_['code'] > 200:return j_
+    else:
+        s_role = str(j_['l_role'])[1:-1]
+        i_rc = j_['count']
+
+    # 如果没有配置权限 返回空
+    if i_rc:
+        return buttonPermission(s_role)
+    else:
+        return {'code':200,'count':i_rc,'data':"","msg":f" 用户 {userid} 未配置角色 无【按钮】权限"}
+
+
+# JOB任务推送
+def postJobMain(jobid:int,j_args={}):
+    message = MESSAGE.copy()
+    message['fun'] = 'postJobMain'
+    log.debug(f">>> {message['fun']} JOBID:{jobid} 参数:{j_args}")
+
+    return postJob(jobid,j_args)

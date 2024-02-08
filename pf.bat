@@ -1,1 +1,1 @@
-nameko run --config amqp.yaml Service:PlatformService
+d:/CODE/platform/.venv/Scripts/nameko.exe run --config amqp.yaml Service:PlatformService

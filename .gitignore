@@ -1,7 +1,6 @@
 /__pycache__/
-auth/__pycache__
 common/__pycache__
-
+common/logs
 
 
 .history

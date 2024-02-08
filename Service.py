@@ -1,15 +1,13 @@
 # -*- coding:utf-8 -*-
-import datetime
-import time
+import datetime,time
 import traceback
 from weakref import WeakKeyDictionary
 from eventlet import tpool
 from nameko.dependency_providers import DependencyProvider
 from nameko.rpc import rpc
 
-from main import HandleLog, msgJson
-from auth.fac import authLogin, authUserButton, authMenuList
-from common.fac import commonQuery, commonUpdate, commonRedis
+from common.cmm import HandleLog, msgJson
+from common.fac import commonQuery, commonUpdate, commonRedis,authLogin, authUserButton, authMenuList, postJob
 
 log = HandleLog('Service',i_c_level=30,i_f_level=30)
 
@@ -17,11 +15,6 @@ log = HandleLog('Service',i_c_level=30,i_f_level=30)
 # date    :2024-02-02
 # description: 提供中台微服务提供 传输数据用 JSON
 
-def some_fun_you_can_not_control():
-    start = time.time()
-    while True:
-        if time.time() - start > 300:
-            break
 
 class LoggingDependency(DependencyProvider):
 
@@ -81,7 +74,7 @@ class PlatformService(object):
     @rpc
     def computation_bound_tpool(self):
         # 使用 tpool 切换为线程运行
-        return tpool.execute(some_fun_you_can_not_control)
+        return tpool.execute(self.computation_bound())
 
     @rpc
     def raise_exception(self):
@@ -100,6 +93,10 @@ class PlatformService(object):
     @rpc    # 公共更新
     def cU(self, j_args):
         return msgJson(commonUpdate(j_args))
+
+    @rpc
+    def cPostJob(self,jobid,userid,j_args):
+        return msgJson(postJob(jobid,userid,j_args))
 
     # AUTH -------------------- 登录要验证 平台标识 API_NO authMenuList 可以限制访问 ----------------------------------------------------------
     @rpc    
