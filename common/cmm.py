@@ -1,18 +1,23 @@
 
-import logging,colorlog
-import os,time
-import threading,itertools,decimal
+import logging
+import colorlog
+import os
+import time
+import threading
+import itertools
+import decimal
 import json
 import redis
 import sqlalchemy
+import requests
 from logging.handlers import RotatingFileHandler
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from sqlalchemy.pool import QueuePool
-from openpyxl.styles import Alignment, Font, PatternFill, Border, Side, PatternFill, Color
-from openpyxl.formatting.rule import ColorScale,ColorScaleRule, CellIsRule, FormulaRule,DataBar,DataBarRule,FormatObject,Rule
-
-import importlib,platform
-import pandas as pd,numpy as np
+from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
+import importlib
+import platform
+import pandas as pd
+# import numpy as np
 
 s_os_path = 'D:/CODE' if platform.system() == 'Windows' else '/home'
 
@@ -34,7 +39,9 @@ MESSAGE = {
     "count":  0,
     "msg":  '',
     "project":PROJECT,
-    "client":CLIENT
+    "client":CLIENT,
+    "ver":VER,
+    "author":'姚鸣'
 }
 LTD = "Copyright© 2023 by SH-Mart"
 IGNORE = {'id','ldt','cdt'}
@@ -45,7 +52,7 @@ logging.logMultiprocessing = 0
 logging.logProcesses = 0
 logging.thread = None  # type: ignore
 log_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'logs')  # log_path为存放日志的路径
-if not os.path.exists(log_path): os.mkdir(log_path)  # 若不存在logs文件夹，则自动创建
+if not os.path.exists(log_path): os.mkdir(log_path)  # 若不存在logs文件夹，则自动创建  # noqa: E701
 s_log_file = os.path.join(log_path,f"mp-{datetime.now().strftime('%Y%m%d')}.log")
 
 
@@ -120,17 +127,17 @@ log = HandleLog("main")
 def setGlobal()->dict:
     s_conn = f"mysql+pymysql://{DB_LINK['YM']['USER']}:{DB_LINK['YM']['PWD']}@{DB_LINK['YM']['HOST']}:{DB_LINK['YM']['PORT']}/platform"
     log.debug(s_conn,'s_conn')
-    s_ = f"SELECT json_values FROM set_global WHERE project_name = 'GLOBAL' AND project_key = 'SETUP';"
+    s_ = "SELECT json_values FROM set_global WHERE project_name = 'GLOBAL' AND project_key = 'SETUP';"
     try:
         df = pd.read_sql_query(s_,sqlalchemy.create_engine(s_conn))['json_values'].head(1)
         if df.shape[0] == 0:
-            raise Exception(f"SELECT json_values FROM set_global WHERE project_name = 'GLOBAL' AND project_key = 'SETUP'")
+            raise Exception("SELECT json_values FROM set_global WHERE project_name = 'GLOBAL' AND project_key = 'SETUP'")
         else:
             j_ = eval(df.to_dict()[0])        
     except Exception as e:
         log.error(e)
     if 'VER' not in j_.keys():
-        raise Exception(f"Yao Ming tell you: set_global > SETUP > json_values > VER is NEED! ")
+        raise Exception("Yao Ming tell you: set_global > SETUP > json_values > VER is NEED! ")
     elif j_['VER'] != VER:
         raise Exception(f"Yao Ming tell you: PROJECT:{VER} DB:{j_['VER']} VER IS NOT MARRY ! ")
     else:
@@ -170,6 +177,23 @@ class DateEncoder(json.JSONEncoder):
 def msgJson(data):
     return json.dumps(data,cls=DateEncoder,ensure_ascii=False)
 
+def msgWrapper(ldt:int,s_func_remark=''):
+    j_msg = MESSAGE.copy()
+    def reMsg(func):
+        def wrapped_function(*args, **kwargs):
+            j_msg['Fac'] = func.__name__
+            start_time = time.time()
+            start_strftime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+
+            j_res = func(*args, **kwargs)
+
+            end_strftime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            d_time = time.time() - start_time
+            j_msg.update(j_res)
+            j_msg.update({'start_time':start_strftime,'end_time':end_strftime,'times':round(d_time,2),"ldt":ldt,'func_remark':s_func_remark})
+            return j_msg
+        return wrapped_function
+    return reMsg
 
 # 要区分一下 查询 JOB 单据 job_custom_logs 
 class threadLogs(threading.Thread):
@@ -225,6 +249,7 @@ def send_text(webhook, content, mentioned_list=None, mentioned_mobile_list=None)
     }
     data = json.dumps(data, ensure_ascii=False).encode("utf-8")
     info = requests.post(url=webhook, data=data, headers=header)
+    print(info)
     
 
 # 发送markdown消息
@@ -242,6 +267,7 @@ def send_md(webhook, content):
     # data = json.dumps(data)
     data = json.dumps(data, ensure_ascii=False).encode("utf-8")
     info = requests.post(url=webhook, data=data, headers=header)
+    print(info)
 
 # 发送文件
 def send_file(webhook, file):
@@ -265,6 +291,7 @@ def send_file(webhook, file):
     # data = json.dumps(data)
     data = json.dumps(data, ensure_ascii=False).encode("utf-8")
     info = requests.post(url=webhook, data=data, headers=header)
+    print(info)
 
 # 生成EXCEL
 def df2Excel(df:pd.core.frame.DataFrame,s_path:str,s_title:str,j_args={})->dict:
@@ -281,7 +308,7 @@ def df2Excel(df:pd.core.frame.DataFrame,s_path:str,s_title:str,j_args={})->dict:
         log.debug(i_high,'i_high')
         log.debug(s_with,'s_with')
 
-        workbook = writer.book
+        # workbook = writer.book
         font = Font(name="微软雅黑", bold=False)
         alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
         pattern_fill = PatternFill(fill_type="solid", fgColor="B4C6E7")
@@ -312,5 +339,6 @@ def df2Excel(df:pd.core.frame.DataFrame,s_path:str,s_title:str,j_args={})->dict:
             cell.font = font
             cell.alignment = alignment
             cell.border = border
+    return {}
 
 GLOBAL = setGlobal()

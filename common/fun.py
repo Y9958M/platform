@@ -67,7 +67,8 @@ def sqlContextToList(sql_str)->dict:
             try:
                 sql_paramter_dict = eval(each_str)
                 sql_list.append(sql_paramter_dict)
-            except:
+            except Exception as e:
+                log.error(e)
                 return None
             finally:
                 each_str =''
@@ -88,7 +89,7 @@ def swapContent(quary_list,paramter_dict)->dict:
     log.debug(paramter_dict,'paramter_dict')
 
     if not quary_list:
-        message.update({'msg':f"转换失败 检查 sql_context "})
+        message.update({'msg':"转换失败 检查 sql_context "})
         return message
 
     sql_result =[]
@@ -190,10 +191,14 @@ def ckUpInfo(sid:int,s_project:str,s_db:str):   # 传入的项目缩写
     message['fun'] = 'fun ckUpInfo'
 
     jl_cuda = GLOBAL['CUDA']    # jl_字典的子项是列表
-    if sid != SID: message.update({'msg':f"sid 不一致 传入标识 {sid} 环境标识 {SID}"})
-    elif s_project not in jl_cuda.keys(): message.update({'msg':f"项目全局 set_global 未配置 传入 {s_project} "})
-    elif s_db not in jl_cuda[s_project]: message.update({'msg':f"CUDA中 {s_project} 未配置 {s_db}"})
-    else:message.update({'code':200})
+    if sid != SID:
+        message.update({'msg':f"sid 不一致 传入标识 {sid} 环境标识 {SID}"})
+    elif s_project not in jl_cuda.keys(): 
+        message.update({'msg':f"项目全局 set_global 未配置 传入 {s_project} "})
+    elif s_db not in jl_cuda[s_project]: 
+        message.update({'msg':f"CUDA中 {s_project} 未配置 {s_db}"})
+    else:
+        message.update({'code':200})
     return message
 
 
@@ -207,8 +212,10 @@ def cmmFetchone(sqlid:str,s_table='common_query')->dict:
         try:
             res = conn.exec_driver_sql(s_)
             l_ds = res.fetchone()
-            if l_ds:message.update({'project':l_ds[0],'sql_context':l_ds[1],'sql_name':l_ds[2],'remark':l_ds[3],'code':200})
-            else:message.update({'msg':f"{s_table} 中 SQLID {sqlid} 未查询到对应记录！",'remark':s_})
+            if l_ds:
+                message.update({'project':l_ds[0],'sql_context':l_ds[1],'sql_name':l_ds[2],'remark':l_ds[3],'code':200})
+            else:
+                message.update({'msg':f"{s_table} 中 SQLID {sqlid} 未查询到对应记录！",'remark':s_})
         except Exception as e:
             message['msg'] = str(e)
             log.error(message)
@@ -272,15 +279,15 @@ def cmmExecMysql(s_db:str,s_project:str,s_sql:str,sqlid:str)->dict:
     return message
 
 
-# MSSQL KV
-def commonQueryMssqlKV(s_db:str,s_project:str,s_sql:str,sqlid:str)->dict:
+# MSSQL
+def commonQueryMssql(s_db:str,s_project:str,s_sql:str,sqlid:str)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'fun commonQueryMssqlKV'
+    message['fun'] = 'fun commonQueryMssql'
     message['sqlid'] = sqlid
     log.debug(f">>> {message['fun']} MSSQL {s_project} 执行:{s_sql}")
     i_rc = 0
-    i_total = 0
-    s_total_sql = f"select count(*) AS total from ({s_sql}) t1"
+    # i_total = 0
+    # s_total_sql = f"select count(*) AS total from ({s_sql}) t1"
     with engine(s_db,s_project).connect() as conn:
 
         try:
@@ -293,7 +300,7 @@ def commonQueryMssqlKV(s_db:str,s_project:str,s_sql:str,sqlid:str)->dict:
             message.update({'remark':s_sql.replace('\r\n',' ').replace('\t',' '),'msg':f"{str(e)}"})
             log.error(message)
             return message
-    log.debug(f"<<< {message['fun']} MS命中数：{rc}")            
+    log.debug(f"<<< {message['fun']} MS命中数：{i_rc}")            
     return message
 
 
@@ -317,7 +324,7 @@ def cmmRedis(redis_name:str,time_expire=0,fields_list =[],data_list=[],redis_db=
             elif isinstance(rs_val, decimal.Decimal):
                 rs_val = float(rs_val)
         else:
-            message.update({'msg':f" REDIS STR 未传入 rs_cal"})
+            message.update({'msg':" REDIS STR 未传入 rs_cal"})
             return message            
         rs.set(redis_name,rs_val)
         rs.expire(redis_name,time_expire)
@@ -329,19 +336,19 @@ def cmmRedis(redis_name:str,time_expire=0,fields_list =[],data_list=[],redis_db=
     
     try:
         _i = fields_list.index(redis_name)
-        for l in data_list:
-            key_info =f"{redis_name}:{l[_i]}"
+        for ls in data_list:
+            key_info =f"{redis_name}:{ls[_i]}"
             _dic = {}
             for i in range(_s):
-                if l[i]:# 需要转换
-                    if isinstance(l[i], datetime):
-                        _dic[fields_list[i]] = l[i].strftime('%Y-%m-%d %H:%M:%S')
-                    elif isinstance(l[i], date):
-                        _dic[fields_list[i]] = l[i].strftime("%Y-%m-%d")
-                    elif isinstance(l[i], decimal.Decimal):
-                        _dic[fields_list[i]] = float(l[i])
+                if ls[i]:# 需要转换
+                    if isinstance(ls[i], datetime):
+                        _dic[fields_list[i]] = ls[i].strftime('%Y-%m-%d %H:%M:%S')
+                    elif isinstance(ls[i], date):
+                        _dic[fields_list[i]] = ls[i].strftime("%Y-%m-%d")
+                    elif isinstance(ls[i], decimal.Decimal):
+                        _dic[fields_list[i]] = float(ls[i])
                     else:
-                        _dic[fields_list[i]] = l[i]
+                        _dic[fields_list[i]] = ls[i]
             pipe.hmset(key_info,_dic)
             rc += 1
             if time_expire:
@@ -352,10 +359,10 @@ def cmmRedis(redis_name:str,time_expire=0,fields_list =[],data_list=[],redis_db=
     try:
         pipe.execute()
         # log.debug("execute")
-        message.update({'count':rc,'code':200,'msg':f"> DB = {Db['DB']} KEY = {redis_name} time_expire={time_expire} rc {rc} 成功"})
+        message.update({'count':rc,'code':200,'msg':f"> KEY = {redis_name} time_expire={time_expire} rc {rc} 成功"})
         return message
     except Exception as e:
-        message.update({'msg':f" REDIS {Db['HOST']} 连接失败  {str(e)}"})
+        message.update({'msg':f" REDIS 连接失败  {str(e)}"})
         return message   
 
 
@@ -381,7 +388,8 @@ def checkCommonRedisArgs(args_dict):
     elif 'rs_name' not in args_dict:
         pass
         # message.update({'msg':'need rs_name '})
-    else:_b = False
+    else:
+        _b = False
     return _b
 
 
@@ -414,7 +422,7 @@ def login(userid):
     log.debug(f">>> {message['fun']} 用户登陆 ")
 
     i_rc = 0
-    s_sql = f"SELECT userid,user_name FROM mdm_user WHERE sid = %s AND userid = %s"
+    s_sql = "SELECT userid,user_name FROM mdm_user WHERE sid = %s AND userid = %s"
 
     with engine().connect() as conn:
         try:
@@ -457,7 +465,7 @@ def menuIds(l_role:list):
         l_ds = df['menu_code'].to_list()
         message.update({'code':200,'count':i_rc,'data':l_ds})
     else:
-        message.update({'code':200,'count':i_rc,'data':"","msg":f" 角色 {roles} 未配置 【菜单】权限"})
+        message.update({'code':200,'count':i_rc,'data':"","msg":f" 角色 {l_role} 未配置 【菜单】权限"})
     return message
 
 
@@ -470,7 +478,7 @@ def menuListPermission(ids=None):
     l_res = list()
 
     i_rc = 0
-    s1 = f"SELECT a.menu_code,a.parent_code,a.menu_name,a.path,a.icon,a.affix,a.full,a.hide,a.keep_alive,a.link,a.redirect,a.component,a.flow_no FROM set_menu a WHERE visible = 1 AND a.parent_code = %s"
+    s1 = "SELECT a.menu_code,a.parent_code,a.menu_name,a.path,a.icon,a.affix,a.full,a.hide,a.keep_alive,a.link,a.redirect,a.component,a.flow_no FROM set_menu a WHERE visible = 1 AND a.parent_code = %s"
     s_sql = f"{s1} AND a.menu_code IN ({ids}) ORDER BY a.flow_no" if ids else f"{s1} ORDER BY a.flow_no"
 
     with engine().connect() as conn:
@@ -478,7 +486,7 @@ def menuListPermission(ids=None):
         i_rc = res.rowcount
         l_ds = res.mappings().all()
         if i_rc == 0:
-            message['msg']= f"业务 无菜单"
+            message['msg']= "业务 无菜单"
             return message
 
         for row in l_ds:
@@ -532,7 +540,7 @@ def buttonPermission(roles:str)->dict:
     message['fun'] = 'buttonPermission'
     log.debug(f">>> {message['fun']} 返回页面按钮权限 ")
 
-    s_sql = f"""SELECT d.menu_code,a.button_code FROM ct_permission2button a
+    s_sql = """SELECT d.menu_code,a.button_code FROM ct_permission2button a
 	INNER JOIN set_permission b ON a.permission_code = b.permission_code
 	INNER JOIN set_menu d ON a.menu_code = d.menu_code
 	INNER JOIN ct_permission2role c ON b.permission_code = c.permission_code"""
@@ -597,7 +605,8 @@ def postJob(jobid:int,j_args={})->dict:
     log.debug(f">>> {message['fun']}")
 
     j_ = getBearer()
-    if j_['code']>200:return j_
+    if j_['code']>200:
+        return j_
     else:
         s_bearer = j_['data']
     
@@ -609,5 +618,6 @@ def postJob(jobid:int,j_args={})->dict:
     res = requests.post(URL, json=JSON, headers = HEADERS)
     j_res = json.loads(res.content)
     message.update(j_res)
-    if j_res['code'] !=200:log.error(message)
+    if j_res['code'] !=200:
+        log.error(message)
     return message

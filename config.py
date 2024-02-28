@@ -43,7 +43,15 @@ if SID == 5:
             'DB'  :'plm',
             'USER':'root',
             'PWD' :'4197'
-        }
+        },
+        'GRASP':{
+            'TYPE':'MYSQL',
+            'HOST':'127.0.0.1',
+            'PORT':3310,
+            'DB'  :'grasp',
+            'USER':'root',
+            'PWD' :'4197'
+        },
     }
     PF_LINK = {
         'DH':{

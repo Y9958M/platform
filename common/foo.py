@@ -1,6 +1,9 @@
 
-from .cmm import SID,MESSAGE,ADMIN,HandleLog
-from .fun import *
+from .cmm import MESSAGE,ADMIN,HandleLog
+from .fun import (cmmFetchone,checkSqlContext,ckDbLink,sqlContextToList,swapContent,ckUpInfo
+                  ,cmmQueryMysql,commonQueryMssql,cmmExecMysql,cmmRedis
+                  ,checkPhone,rolesList,menuIds,login,menuListPermission,buttonPermission
+                  ,postJob)
 
 
 log = HandleLog(__name__,i_c_level=10,i_f_level=20)
@@ -38,38 +41,42 @@ def commonQueryMain(j_args)->dict:
     
     j_ = dict() # 查询平台库 platform
     j_.update(cmmFetchone(sqlid,'common_query'))
-    if j_['code'] > 200:return j_
+    if j_['code'] > 200:
+        return j_
     else:
         sql_context =   j_['sql_context']
         s_project   =   j_['project']
         message['sql_name'] = j_['sql_name']
         message['remark']   = j_['remark']
-        
     j_.clear()  # check sql_context 防注入检查'
     j_.update(checkSqlContext(sql_context))
-    if  j_['code'] > 200:return j_.update({'sqlid':sqlid})
 
     j_.clear()  # 检查 DB_LINK 连接
     j_.update(ckDbLink(s_project))
-    if  j_['code'] >200:return j_.update({'sqlid':sqlid})
-    else:j_db_info = j_['data']
+    if  j_['code'] >200:
+        return j_
+    else:
+        j_db_info = j_['data']
+        log.warning(j_db_info)
 
     j_.clear()  # 处理 sql_context
     j_.update(sqlContextToList(sql_context))
-    if  j_['code'] >200:return j_.update({'sqlid':sqlid})
-    else:l_sql = j_['data']
+    if  j_['code'] >200:
+        return j_
+    else:
+        l_sql = j_['data']
 
     j_.clear()  # 查询拼装
     j_.update(swapContent(l_sql,j_args))
-    if  j_['code'] >200:return j_.update({'sqlid':sqlid})
-    else:s_sql = j_['data']
+    if  j_['code'] >200:
+        return j_
+    else:
+        s_sql = j_['data']
 
     if   j_db_info['TYPE'] == 'MYSQL':
         message.update(cmmQueryMysql(j_db_info['DB'],j_db_info['PROJECT'],s_sql,sqlid,i_page_num,i_page_size)) 
     elif j_db_info['TYPE'] == 'MSSQL':
         message.update(commonQueryMssql(j_db_info['DB'],j_db_info['PROJECT'],s_sql,sqlid))    # 暂时不支持分页
-    elif j_db_info['TYPE'] == 'ORACLE':
-        message.update(cmmExecOra(j_db_info['DB'],j_db_info['PROJECT'],s_sql,sqlid))
     else:
         message.update({'msg':f"查询失败 未匹配TYPE: {j_db_info['TYPE']}"})
     return message
@@ -95,7 +102,8 @@ def commonUpdateMain(j_args):
 
     j_ = dict() # 查询平台库 通用更新 从注册库取 更新有权限
     j_.update(cmmFetchone(sqlid,"common_update"))
-    if j_['code'] > 200:return j_
+    if j_['code'] > 200:
+        return j_
     else:
         sql_context =   j_['sql_context']
         s_project   =   j_['project']
@@ -104,29 +112,32 @@ def commonUpdateMain(j_args):
  
     j_.clear()  # 检查 DB_LINK 连接
     j_.update(ckDbLink(s_project))
-    if j_['code'] >200:return j_.update({'sqlid':sqlid})
-    else:j_db_info = j_['data']
+    if j_['code'] >200:
+        return j_
+    else:
+        j_db_info = j_['data']
 
     j_.clear()  # 防止超范围的更新
     j_.update(ckUpInfo(sid,j_db_info['PROJECT'],j_db_info['DB']))
-    if j_['code'] >200:return j_.update({'sqlid':sqlid})
+    if j_['code'] >200:
+        return j_
 
     j_.clear()  # 处理 sql_context
     j_.update(sqlContextToList(sql_context))
-    if  j_['code'] >200:return j_.update({'sqlid':sqlid})
-    else:l_sql = j_['data']
+    if  j_['code'] >200:
+        return j_
+    else:
+        l_sql = j_['data']
 
     j_.clear()  # 查询拼装
     j_.update(swapContent(l_sql,j_args))
-    if j_['code'] >200:return j_.update({'sqlid':sqlid})
-    else:s_sql = j_['data']
+    if j_['code'] >200:
+        return j_
+    else:
+        s_sql = j_['data']
 
     if j_db_info['TYPE'] == 'MYSQL':
         message.update(cmmExecMysql(j_db_info['DB'],j_db_info['PROJECT'],s_sql,sqlid)) 
-    elif j_db_info['TYPE']== 'MSSQL':
-        message.update(cmmExecMssql(j_db_info['DB'],j_db_info['PROJECT'],s_sql,sqlid))
-    elif j_db_info['TYPE']== 'ORACLE':
-        message.update(cmmExecOra(j_db_info['DB'],j_db_info['PROJECT'],s_sql,sqlid))
     else:
         message.update({'msg':f"{j_db_info['TYPE']} 未能支持 数据库类型"})     
     return message
@@ -143,7 +154,7 @@ def commonRedisMain(j_args:dict):
         message.update({'msg':'need rs_name 0'})
         return message
     else:
-        project_name=   j_args['project_name'] if 'project_name' in j_args else 'REDIS'
+        # project_name=   j_args['project_name'] if 'project_name' in j_args else 'REDIS'
         time_expire =   j_args['time_expire']  if 'time_expire' in j_args else 0
         redis_type  =   j_args['redis_type']   if 'redis_type'  in j_args else 'HASH'
         redis_db    =   j_args['redis_db']     if 'redis_db'    in j_args else 0
@@ -159,14 +170,16 @@ def commonRedisMain(j_args:dict):
             return message
         j_ds = {}
         j_ds = commonQueryMain(j_args)
-        if j_ds['code'] > 200:return j_ds
+        if j_ds['code'] > 200:
+            return j_ds
         else:
             data_list = j_ds['data']
             fields_list = j_ds['fields_list']
 
         j_.clear()
         j_ = cmmRedis(redis_name = rs_name,time_expire= time_expire, fields_list= fields_list, data_list= data_list,redis_db= redis_db)
-        if j_['code'] > 200:return j_
+        if j_['code'] > 200:
+            return j_
         else:
             message.update({'code':200,'msg':f"成功更新 缓存库 {redis_db} {rs_name}:XXX  过期时间：{time_expire} 秒",'count':j_['count']})
             return message
@@ -176,9 +189,12 @@ def commonRedisMain(j_args:dict):
         if rs_val and rs_key:
             j_.clear()
             j_ = cmmRedis(redis_name = rs_name,time_expire= time_expire, fields_list= [rs_key], data_list= [rs_val],redis_db= redis_db)
-            if j_['code'] > 200:return j_
-            else:message.update({'code':200,'msg':f"成功更新 缓存库 {redis_db} {rs_name},{rs_key},{rs_val}  过期时间：{time_expire} 秒",'count':1})    
-        else:message.update({'code':201,'msg':f"缺少参数 rs_key {rs_key} rs_val {rs_val}"})
+            if j_['code'] > 200:
+                return j_
+            else:
+                message.update({'code':200,'msg':f"成功更新 缓存库 {redis_db} {rs_name},{rs_key},{rs_val}  过期时间：{time_expire} 秒",'count':1})    
+        else:
+            message.update({'code':201,'msg':f"缺少参数 rs_key {rs_key} rs_val {rs_val}"})
         return message
 
     elif redis_type in ['STR']:
@@ -186,9 +202,12 @@ def commonRedisMain(j_args:dict):
         if rs_val:
             j_.clear()
             j_ = cmmRedis(redis_name = rs_name,time_expire= time_expire, fields_list= [], data_list= [rs_val],redis_db= redis_db)
-            if j_['code'] > 200:return j_
-            else:message.update({'code':200,'msg':f"成功更新 缓存库 {redis_db} {rs_name}:{rs_val}  过期时间：{time_expire} 秒",'count':1})     
-        else:message.update({'code':201,'msg':f"缺少参数 rs_val {rs_val}"})
+            if j_['code'] > 200:
+                return j_
+            else:
+                message.update({'code':200,'msg':f"成功更新 缓存库 {redis_db} {rs_name}:{rs_val}  过期时间：{time_expire} 秒",'count':1})     
+        else:
+            message.update({'code':201,'msg':f"缺少参数 rs_val {rs_val}"})
         return message          
 
     else:
@@ -226,14 +245,16 @@ def authMenuListMain(userid):
     log.debug(userid,"TWO 【菜单】通用 用户 角色关系表 查出用户的所有角色 ")
     j_.clear()
     j_ = rolesList(userid)
-    if j_['code'] > 200:return j_
+    if j_['code'] > 200:
+        return j_
     else:
         l_role = j_['l_role']
 
     log.debug(l_role,"THREE 【菜单】[定制] 角色下所有的 菜单相关权限 ")
     j_.clear()
     j_ = menuIds(l_role)
-    if j_['code'] > 200:return j_
+    if j_['code'] > 200:
+        return j_
     else:
         s_ids = str(j_['data'])[1:-1]
     log.debug(s_ids,"FOUR 【菜单】 返回结果 定制")
@@ -253,7 +274,8 @@ def authUserButtonMain(userid):
     log.debug(userid,"TWO 【按钮】通用 用户 角色关系表 查出用户的所有角色 ")
     j_ = dict()
     j_ = rolesList(userid)
-    if j_['code'] > 200:return j_
+    if j_['code'] > 200:
+        return j_
     else:
         s_role = str(j_['l_role'])[1:-1]
         i_rc = j_['count']
