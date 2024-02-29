@@ -3,7 +3,7 @@ from .cmm import MESSAGE,ADMIN,HandleLog
 from .fun import (cmmFetchone,checkSqlContext,ckDbLink,sqlContextToList,swapContent,ckUpInfo
                   ,cmmQueryMysql,commonQueryMssql,cmmExecMysql,cmmRedis
                   ,checkPhone,rolesList,menuIds,login,menuListPermission,buttonPermission
-                  ,postJob)
+                  ,postJob,billId)
 
 
 log = HandleLog(__name__,i_c_level=10,i_f_level=20)
@@ -57,7 +57,6 @@ def commonQueryMain(j_args)->dict:
         return j_
     else:
         j_db_info = j_['data']
-        log.warning(j_db_info)
 
     j_.clear()  # 处理 sql_context
     j_.update(sqlContextToList(sql_context))
@@ -213,6 +212,15 @@ def commonRedisMain(j_args:dict):
     else:
         message.update({'code':200,'msg':f"传入 {redis_type} 不在范围"})
         return message
+
+
+# 通用单据号 3K1T6D4F1W
+def cmmBillidMain(s_bill_key:str,bltid:1)-> dict:
+    message = MESSAGE.copy()
+    message['fun'] = 'cmmBillidMain'
+    log.debug(f">>> {message['fun']} 通用单据号 3K1T6D4F1W {s_bill_key}")
+
+    return billId(s_bill_key,bltid)
 
 
 # 用户登录

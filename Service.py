@@ -8,7 +8,7 @@ from nameko.dependency_providers import DependencyProvider
 from nameko.rpc import rpc
 
 from common.cmm import HandleLog, msgJson
-from common.fac import commonQuery, commonUpdate, commonRedis,authLogin, authUserButton, authMenuList, postJob
+from common.fac import commonQuery, commonUpdate, commonRedis,commonBillid,authLogin, authUserButton, authMenuList, postJob
 
 log = HandleLog('Service',i_c_level=30,i_f_level=30)
 
@@ -87,7 +87,7 @@ class PlatformService(object):
         log.debug('hello,i am Platform been called by customer 消费者 ,返回消息：{}'.format(msg))
         return f"Hello World!I Am {self.name}: {msg} from Platform producer! 确认已连接"
 
-    @rpc    # 公共查询 在API前端转 DICT
+    @rpc    # 公共查询 在API前端转 DICT 
     def cQ(self, j_args):
         return msgJson(commonQuery(j_args))
 
@@ -99,6 +99,10 @@ class PlatformService(object):
     def cPostJob(self,jobid,userid,j_args):
         return msgJson(postJob(jobid,userid,j_args))
 
+    @rpc
+    def cBillid(self,s_bill_key:str,bltid:int): 
+        return msgJson(commonBillid(s_bill_key,bltid))
+    
     # AUTH -------------------- 登录要验证 平台标识 API_NO authMenuList 可以限制访问 ----------------------------------------------------------
     @rpc    
     def cAuthLogin(self,userid:str,api_no:int):
@@ -116,6 +120,9 @@ class PlatformService(object):
     @rpc    
     def cR(self,j_args):
         return msgJson(commonRedis(j_args))
+    
+    # RETURN ---------------------------------------
+
 
 # FlaskPooledClusterRpcProxy接受所有以前缀为前缀的 nameko 配置值。此外，它还公开了其他配置选项：NAMEKO_
 

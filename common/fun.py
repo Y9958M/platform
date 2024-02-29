@@ -144,6 +144,32 @@ def swapContent(quary_list,paramter_dict)->dict:
     return message
 
 
+# 单号生成
+def billId(s_bill_key: str,bltid:int)->dict:
+    message = MESSAGE.copy()
+    message['fun'] = 'billid'
+
+    i_bill_key = GLOBAL['BILL_KEY'].get(s_bill_key.upper(),-99)
+    s_weekday = str(pd.Timestamp.now().weekday() +1)
+    kkktyymmdd = f"{str(i_bill_key)}{str(bltid)}{pd.Timestamp.now().strftime('%y%m%d')}"
+    try:
+        if rs.exists(kkktyymmdd):
+            rs.incr(kkktyymmdd,1)
+            s_4 = f"0000{rs.get(kkktyymmdd)}"[-4:]
+        else:
+            rs.set(kkktyymmdd,1)
+            rs.expire(kkktyymmdd, 60*60*24)
+            s_4 = "0001"
+    except Exception as e:
+        message['msg'] = str(e)
+        log.error(message)
+        return message
+    s_billid = f"{kkktyymmdd}{s_4}{s_weekday}"
+    message.update({'code':200,'billid':s_billid})
+    log.debug(s_billid,'billid')
+    return message
+
+
 # 校验手机号码
 def checkPhone(phone)->dict:
     message = MESSAGE.copy()
@@ -228,7 +254,7 @@ def cmmQueryMysql(s_db:str,s_project:str,s_sql:str,sqlid:str,i_page_num=1,i_page
     message = MESSAGE.copy()
     message['fun'] = 'fun cmmQueryMysql'
     message['sqlid'] = sqlid
-    log.debug(f">>> {message['fun']} 执行语句 :{s_sql}")
+    log.debug(f">>> {message['fun']} 执行语句 :\n{s_sql}")
 
     i_total = 0
     s_total_sql = f"select count(*) AS total from ({s_sql}) t1"
@@ -238,7 +264,7 @@ def cmmQueryMysql(s_db:str,s_project:str,s_sql:str,sqlid:str,i_page_num=1,i_page
             i_total = res.fetchone()[0]
         except Exception as e:
             message.update({'msg':str(e)})
-            log.error(message)
+            log.error(message,'s_total_sql')
             return message
         if i_total == 0:
             message.update({'data':{'fields':[],'datalist':[],'total':i_total,'pageNum':i_page_num,'pageSize':i_page_size},'code':200,'msg':f"> total:{i_total}"})
@@ -253,13 +279,13 @@ def cmmQueryMysql(s_db:str,s_project:str,s_sql:str,sqlid:str,i_page_num=1,i_page
             message.update({'data':{'datalist':l_ds,'fields':l_field,'total':i_total,'pageNum':i_page_num,'pageSize':i_page_size},'code':200,"count":i_rc,'msg':f"> total:{i_total}"})   
         except Exception as e:
             message.update({'remark':s_sql.replace('\r\n',' '),'msg':str(e)})
-            log.error(message)
+            log.error(message,'s_sql')
             return message
     log.debug(f"<<< {message['fun']} 命中数：{i_rc}")
     return message
 
 
-# MYSQL 拼接时用的时候处理 不处理kv
+# MYSQL 执行 拼接时用的时候处理 不处理kv
 def cmmExecMysql(s_db:str,s_project:str,s_sql:str,sqlid:str)->dict:
     message = MESSAGE.copy()
     message['fun'] = 'fun cmmExecMysql'
@@ -270,6 +296,7 @@ def cmmExecMysql(s_db:str,s_project:str,s_sql:str,sqlid:str)->dict:
         try:
             res = conn.exec_driver_sql(s_sql)
             i_rc = res.rowcount
+            conn.commit()
             message.update({'code':200,"count":i_rc,'msg':f"> 更新数：{i_rc}"})   
         except Exception as e:
             message.update({'remark':s_sql.replace('\r\n',' '),'msg':str(e)})
@@ -302,7 +329,6 @@ def commonQueryMssql(s_db:str,s_project:str,s_sql:str,sqlid:str)->dict:
             return message
     log.debug(f"<<< {message['fun']} MS命中数：{i_rc}")            
     return message
-
 
 
 # REDIS 执行 具体功能 明确入参
@@ -439,7 +465,6 @@ def login(userid):
             log.error(message)
         finally:
             return message
-
 
 
 def menuIds(l_role:list):

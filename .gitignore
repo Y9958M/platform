@@ -2,7 +2,7 @@
 common/__pycache__
 common/logs
 
-
+.mypy_cache
 .history
 .venv
 .vscode

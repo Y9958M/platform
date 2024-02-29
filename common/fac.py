@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 from .cmm import threadLogs,msgWrapper
-from .foo import commonQueryMain,commonUpdateMain,commonRedisMain,authLoginMain, authUserButtonMain, authMenuListMain,postJobMain
+from .foo import commonQueryMain,commonUpdateMain,commonRedisMain,authLoginMain, authUserButtonMain, authMenuListMain,postJobMain,cmmBillidMain
 
 # author  :don
 # date    :20240202
@@ -31,6 +31,13 @@ def commonRedis(args_dict):
     j_res.update(args_dict)
     logs = threadLogs(thread_id= j_res.get('userid',-99),thread_name= j_res.get('rs_name','rs_name'),fac= "commonQuery",args_dict= j_res)
     logs.start()
+    return j_res
+
+
+@msgWrapper(ldt=20240228,s_func_remark='通用【缓存】入参 redis_type redis_db rs_name rs_key rs_val proj_name sqlid time_expire')
+def commonBillid(s_bill_key:str,bltid=1):
+    j_res = cmmBillidMain(s_bill_key, bltid=1)
+    j_res.update({'bill_key':s_bill_key,'bltid':bltid})
     return j_res
 
 
