@@ -211,7 +211,7 @@ class threadLogs(threading.Thread):
     "commonUpdate":   "insert into log_common_update(userid,sqlid,parm_json)values(%s,%s,%s)",
     "commonRedis":    "insert into log_common_redis(userid,redis_name,parm_json)values(%s,%s,%s)",
     "commonBill":     "insert into log_common_bill(userid,billid,parm_json)values(%s,%s,%s)",
-    "authLogin":      "insert into log_auth_login(api_no,userid,parm_json)values(%s,%s,%s)",
+    "authLogin":      "insert into log_auth_login(code_from,userid,parm_json)values(%s,%s,%s)",
     "postJob":        "insert into log_post_job(jobid,userid,parm_json)values(%s,%s,%s)",
     }
         time.sleep(3)

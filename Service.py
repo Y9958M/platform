@@ -103,10 +103,10 @@ class PlatformService(object):
     def cBillid(self,s_bill_key:str,bltid:int): 
         return msgJson(commonBillid(s_bill_key,bltid))
     
-    # AUTH -------------------- 登录要验证 平台标识 API_NO authMenuList 可以限制访问 ----------------------------------------------------------
+    # AUTH -------------------- 登录要验证 平台标识 code_from authMenuList 可以限制访问 ----------------------------------------------------------
     @rpc    
-    def cAuthLogin(self,userid:str,api_no:int):
-        return msgJson(authLogin(userid,api_no))
+    def cAuthLogin(self,userid:str,code_from:str):
+        return msgJson(authLogin(userid,code_from))
 
     @rpc    
     def cAuthMenu(self,userid:int):
