@@ -19,7 +19,7 @@ import platform
 import pandas as pd
 # import numpy as np
 
-s_os_path = 'D:/CODE' if platform.system() == 'Windows' else '/home'
+s_os_path = 'D:/home' if platform.system() == 'Windows' else '/home'
 
 CF = importlib.machinery.SourceFileLoader('config', f'{s_os_path}/platform/config.py').load_module()
 
@@ -144,6 +144,22 @@ def setGlobal()->dict:
         print(f"{'-' * 24} platform {'-' * 24}")
         print(j_)
     return j_
+
+# 反转字典
+def reverse_dict(input_dict):
+    return dict(zip(input_dict.values(), input_dict.keys()))
+
+
+def l2d(j_ds):
+    if 'data' not in j_ds:
+        return j_ds
+    if 'fields' not in j_ds['data'] or 'datalist' not in j_ds['data']:
+        return j_ds
+    fields = j_ds['data']['fields']
+    datalist = j_ds['data']['datalist']
+    l_ds = [dict(zip(fields, sublist)) for sublist in datalist]
+    j_ds['data']['datalist'] = l_ds
+    return j_ds
 
 
 def engine(DB='platform',LINK=""):

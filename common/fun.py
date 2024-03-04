@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 import requests
-from .cmm import GLOBAL, MESSAGE, SID, DB_LINK,PF_LINK,HandleLog,engine,rs,pd,datetime,date,decimal,json
+from .cmm import GLOBAL, MESSAGE, SID, DB_LINK,PF_LINK,HandleLog,engine,rs,pd,datetime,date,decimal,json,reverse_dict,l2d
 
 log = HandleLog(__name__,i_c_level=10,i_f_level=20)
 
@@ -144,31 +144,6 @@ def swapContent(quary_list,paramter_dict)->dict:
     return message
 
 
-# 单号生成
-def billId(s_bill_key: str,bltid:int)->dict:
-    message = MESSAGE.copy()
-    message['fun'] = 'billid'
-
-    i_bill_key = GLOBAL['BILL_KEY'].get(s_bill_key.upper(),-99)
-    s_weekday = str(pd.Timestamp.now().weekday() +1)
-    kkktyymmdd = f"{str(i_bill_key)}{str(bltid)}{pd.Timestamp.now().strftime('%y%m%d')}"
-    try:
-        if rs.exists(kkktyymmdd):
-            rs.incr(kkktyymmdd,1)
-            s_4 = f"0000{rs.get(kkktyymmdd)}"[-4:]
-        else:
-            rs.set(kkktyymmdd,1)
-            rs.expire(kkktyymmdd, 60*60*24)
-            s_4 = "0001"
-    except Exception as e:
-        message['msg'] = str(e)
-        log.error(message)
-        return message
-    s_billid = f"{kkktyymmdd}{s_4}{s_weekday}"
-    message.update({'code':200,'billid':s_billid})
-    log.debug(s_billid,'billid')
-    return message
-
 
 # 校验手机号码
 def checkPhone(phone)->dict:
@@ -303,6 +278,86 @@ def cmmExecMysql(s_db:str,s_project:str,s_sql:str,sqlid:str)->dict:
             log.error(message)
             return message
     log.debug(f"<<< {message['fun']} 更新数：{i_rc}")
+    return message
+
+
+# 查询单号信息
+def billInfo(s_billid: str)->dict:
+    message = MESSAGE.copy()
+    message['fun'] = 'billInfo'
+
+    if len(s_billid) != 15:
+        message.update({'msg':f"billid {s_billid} 长度 不合规"})
+        return message
+    j_bill_key = reverse_dict(GLOBAL['BILL_KEY'])
+    s_hdr = j_bill_key.get(int(s_billid[0:3]),'')
+    log.debug(s_hdr,'s_hdr')
+    if not s_hdr:
+        message.update({'msg':f"billid {s_billid} 未注册的单据类型"})
+        return message
+    s_project = s_hdr.split('_')[0]
+    log.debug(s_project)
+    if s_project not in DB_LINK:
+        message.update({'msg':f"billid {s_billid} 单据项目未配置连接参数"})
+        return message
+    
+    s_sql = f"SELECT * FROM {s_hdr} WHERE billid = {s_billid};"
+    j_ = cmmQueryMysql(s_project.lower(),s_project,s_sql,'billInfo')
+    j_.update({'s_project':s_project,'s_hdr':s_hdr})
+    return j_
+
+
+# 查询单号信息
+def billDel(s_billid: str)->dict:
+    message = MESSAGE.copy()
+    message['fun'] = 'billDel'
+
+    j_ = l2d(billInfo(s_billid))
+    if j_['code'] > 200:
+        return j_
+    if j_['data'].get('total',0) ==0:
+        message.update({'code':201,'msg':f'未查询到单据 {s_billid}'})
+        return j_
+    else:
+        j_ds = j_['data']['datalist']
+        blsid = j_ds.get('blsid',-99)
+        s_project = j_['s_project']
+        s_hdr = j_['s_hdr']
+        s_dtl = s_hdr[:-3] + "dtl"
+    if blsid not in (0,1):
+        message.update({'msg':f'当前单据【{s_billid}】状态为【{blsid}】不允许删除！'})
+        return message
+    
+    s_sql = f"DELETE FROM {s_hdr} WHERE billid = {s_billid};"
+    j_ = cmmExecMysql(s_project.lower(),s_project,s_sql,'billDel')
+    s_sql = f"DELETE FROM {s_dtl} WHERE billid = {s_billid};"
+    j_ = cmmExecMysql(s_project.lower(),s_project,s_sql,'billDel')
+    return j_
+
+
+# 单号生成
+def billId(s_bill_key: str,bltid:int)->dict:
+    message = MESSAGE.copy()
+    message['fun'] = 'billid'
+
+    i_bill_key = GLOBAL['BILL_KEY'].get(s_bill_key.upper(),-99)
+    s_weekday = str(pd.Timestamp.now().weekday() +1)
+    kkktyymmdd = f"{str(i_bill_key)}{str(bltid)}{pd.Timestamp.now().strftime('%y%m%d')}"
+    try:
+        if rs.exists(kkktyymmdd):
+            rs.incr(kkktyymmdd,1)
+            s_4 = f"0000{rs.get(kkktyymmdd)}"[-4:]
+        else:
+            rs.set(kkktyymmdd,1)
+            rs.expire(kkktyymmdd, 60*60*24)
+            s_4 = "0001"
+    except Exception as e:
+        message['msg'] = str(e)
+        log.error(message)
+        return message
+    s_billid = f"{kkktyymmdd}{s_4}{s_weekday}"
+    message.update({'code':200,'billid':s_billid})
+    log.debug(s_billid,'billid')
     return message
 
 

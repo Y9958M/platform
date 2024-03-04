@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 from .cmm import threadLogs,msgWrapper
-from .foo import commonQueryMain,commonUpdateMain,commonRedisMain,authLoginMain, authUserButtonMain, authMenuListMain,postJobMain,cmmBillidMain
+from .foo import commonQueryMain,commonUpdateMain,commonRedisMain,authLoginMain, authUserButtonMain, authMenuListMain,postJobMain,cmmBillidMain,cmmBillInfoMain,cmmBillDelMain
 
 # author  :don
 # date    :20240202
@@ -34,12 +34,23 @@ def commonRedis(args_dict):
     return j_res
 
 
-@msgWrapper(ldt=20240228,s_func_remark='通用【缓存】入参 redis_type redis_db rs_name rs_key rs_val proj_name sqlid time_expire')
+@msgWrapper(ldt=20240228,s_func_remark='通用【单号】')
 def commonBillid(s_bill_key:str,bltid=1):
     j_res = cmmBillidMain(s_bill_key, bltid=1)
     j_res.update({'bill_key':s_bill_key,'bltid':bltid})
     return j_res
 
+
+@msgWrapper(ldt=20240304,s_func_remark='通用【单号信息】')
+def commonBillInfo(s_billid:str,s_act='query'):
+    if s_act == 'query':
+        j_res = cmmBillInfoMain(s_billid)
+    elif s_act.lower() == 'del':
+        j_res = cmmBillDelMain(s_billid)
+    else:
+        j_res = {'msg':'未配对通用单据动作'}
+    j_res.update({'billid':s_billid})
+    return j_res
 
 @msgWrapper(ldt=20240228,s_func_remark='检查登陆')
 def authLogin(userid,api_no:int):

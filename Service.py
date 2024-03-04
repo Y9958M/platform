@@ -8,7 +8,7 @@ from nameko.dependency_providers import DependencyProvider
 from nameko.rpc import rpc
 
 from common.cmm import HandleLog, msgJson
-from common.fac import commonQuery, commonUpdate, commonRedis,commonBillid,authLogin, authUserButton, authMenuList, postJob
+from common.fac import commonQuery, commonUpdate, commonRedis,commonBillid,commonBillInfo,authLogin, authUserButton, authMenuList, postJob
 
 log = HandleLog('Service',i_c_level=30,i_f_level=30)
 
@@ -102,6 +102,10 @@ class PlatformService(object):
     @rpc
     def cBillid(self,s_bill_key:str,bltid:int): 
         return msgJson(commonBillid(s_bill_key,bltid))
+
+    @rpc    # 默认查询，s_act == del 删除状态0 1 单据
+    def cBillInfo(self,s_billid:str): 
+        return msgJson(commonBillInfo(s_billid))
     
     # AUTH -------------------- 登录要验证 平台标识 code_from authMenuList 可以限制访问 ----------------------------------------------------------
     @rpc    

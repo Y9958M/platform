@@ -3,7 +3,7 @@ from .cmm import MESSAGE,ADMIN,HandleLog
 from .fun import (cmmFetchone,checkSqlContext,ckDbLink,sqlContextToList,swapContent,ckUpInfo
                   ,cmmQueryMysql,commonQueryMssql,cmmExecMysql,cmmRedis
                   ,checkPhone,rolesList,menuIds,login,menuListPermission,buttonPermission
-                  ,postJob,billId)
+                  ,postJob,billId,billInfo,billDel)
 
 
 log = HandleLog(__name__,i_c_level=10,i_f_level=20)
@@ -214,6 +214,24 @@ def commonRedisMain(j_args:dict):
         return message
 
 
+# 通用单据信息 返回单据所有信息
+def cmmBillInfoMain(s_billid:str)-> dict:
+    message = MESSAGE.copy()
+    message['fun'] = 'cmmBillInfoMain'
+    log.debug(f">>> {message['fun']} 通用单据信息 {s_billid}")
+
+    return billInfo(str(s_billid))
+
+
+# 通用删除单据
+def cmmBillDelMain(s_billid:str)-> dict:
+    message = MESSAGE.copy()
+    message['fun'] = 'cmmBillDelMain'
+    log.debug(f">>> {message['fun']} 通用删除状态为0或1状态的单据 {s_billid}")
+
+    return billDel(str(s_billid))
+
+
 # 通用单据号 3K1T6D4F1W
 def cmmBillidMain(s_bill_key:str,bltid:1)-> dict:
     message = MESSAGE.copy()
@@ -221,6 +239,7 @@ def cmmBillidMain(s_bill_key:str,bltid:1)-> dict:
     log.debug(f">>> {message['fun']} 通用单据号 3K1T6D4F1W {s_bill_key}")
 
     return billId(s_bill_key,bltid)
+
 
 
 # 用户登录
