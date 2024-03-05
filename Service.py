@@ -104,8 +104,8 @@ class PlatformService(object):
         return msgJson(commonBillid(s_bill_key,bltid))
 
     @rpc    # 默认查询，s_act == del 删除状态0 1 单据
-    def cBillInfo(self,s_billid:str): 
-        return msgJson(commonBillInfo(s_billid))
+    def cBillInfo(self,s_billid:str,s_act='query'): 
+        return msgJson(commonBillInfo(s_billid,s_act))
     
     # AUTH -------------------- 登录要验证 平台标识 code_from authMenuList 可以限制访问 ----------------------------------------------------------
     @rpc    

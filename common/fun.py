@@ -231,21 +231,23 @@ def cmmQueryMysql(s_db:str,s_project:str,s_sql:str,sqlid:str,i_page_num=1,i_page
     message['sqlid'] = sqlid
     log.debug(f">>> {message['fun']} 执行语句 :\n{s_sql}")
 
-    i_total = 0
+    i_total = 1
     s_total_sql = f"select count(*) AS total from ({s_sql}) t1"
     with engine(s_db,s_project).connect() as conn:
-        try:
-            res = conn.exec_driver_sql(s_total_sql)
-            i_total = res.fetchone()[0]
-        except Exception as e:
-            message.update({'msg':str(e)})
-            log.error(message,'s_total_sql')
-            return message
-        if i_total == 0:
-            message.update({'data':{'fields':[],'datalist':[],'total':i_total,'pageNum':i_page_num,'pageSize':i_page_size},'code':200,'msg':f"> total:{i_total}"})
-            return message
-        elif i_total > i_page_size:
-            s_sql = f"{s_sql} LIMIT {(i_page_num-1) * i_page_size},{i_page_size}"
+        if i_page_size > 1 and i_page_num == 1:
+            try:
+                res = conn.exec_driver_sql(s_total_sql)
+                i_total = res.fetchone()[0]
+            except Exception as e:
+                message.update({'msg':str(e)})
+                log.error(message,'s_total_sql')
+                return message
+            if i_total == 0:
+                message.update({'data':{'fields':[],'datalist':[],'total':i_total,'pageNum':i_page_num,'pageSize':i_page_size},'code':200,'msg':f"> total:{i_total}"})
+                return message
+            elif i_total > i_page_size:
+                s_sql = f"{s_sql} LIMIT {(i_page_num-1) * i_page_size},{i_page_size}"
+
         try:
             res = conn.exec_driver_sql(s_sql)
             i_rc = res.rowcount
@@ -256,7 +258,7 @@ def cmmQueryMysql(s_db:str,s_project:str,s_sql:str,sqlid:str,i_page_num=1,i_page
             message.update({'remark':s_sql.replace('\r\n',' '),'msg':str(e)})
             log.error(message,'s_sql')
             return message
-    log.debug(f"<<< {message['fun']} 命中数：{i_rc}")
+        log.debug(f"<<< {message['fun']} 命中数：{i_rc}")
     return message
 
 
@@ -290,19 +292,19 @@ def billInfo(s_billid: str)->dict:
         message.update({'msg':f"billid {s_billid} 长度 不合规"})
         return message
     j_bill_key = reverse_dict(GLOBAL['BILL_KEY'])
-    s_hdr = j_bill_key.get(int(s_billid[0:3]),'')
+    s_hdr = j_bill_key.get(int(s_billid[0:3]),'').lower()
     log.debug(s_hdr,'s_hdr')
     if not s_hdr:
         message.update({'msg':f"billid {s_billid} 未注册的单据类型"})
         return message
-    s_project = s_hdr.split('_')[0]
-    log.debug(s_project)
+    s_project = s_hdr.split('_')[0].upper()
+    log.debug(s_project,'s_project')
     if s_project not in DB_LINK:
         message.update({'msg':f"billid {s_billid} 单据项目未配置连接参数"})
         return message
     
     s_sql = f"SELECT * FROM {s_hdr} WHERE billid = {s_billid};"
-    j_ = cmmQueryMysql(s_project.lower(),s_project,s_sql,'billInfo')
+    j_ = cmmQueryMysql(s_project.lower(),s_project,s_sql,'billInfo',i_page_num=1,i_page_size=1)
     j_.update({'s_project':s_project,'s_hdr':s_hdr})
     return j_
 
@@ -313,14 +315,14 @@ def billDel(s_billid: str)->dict:
     message['fun'] = 'billDel'
 
     j_ = l2d(billInfo(s_billid))
+    log.debug(j_,'billInfo message')
     if j_['code'] > 200:
         return j_
     if j_['data'].get('total',0) ==0:
         message.update({'code':201,'msg':f'未查询到单据 {s_billid}'})
         return j_
     else:
-        j_ds = j_['data']['datalist']
-        blsid = j_ds.get('blsid',-99)
+        blsid = j_['data']['datalist'][0].get('blsid',-99)
         s_project = j_['s_project']
         s_hdr = j_['s_hdr']
         s_dtl = s_hdr[:-3] + "dtl"
