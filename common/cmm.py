@@ -133,7 +133,7 @@ def setGlobal()->dict:
         if df.shape[0] == 0:
             raise Exception("SELECT json_values FROM set_global WHERE project_name = 'GLOBAL' AND project_key = 'SETUP'")
         else:
-            j_ = eval(df.to_dict()[0])        
+            j_ = eval(df.to_dict()[0])
     except Exception as e:
         log.error(e)
     if 'VER' not in j_.keys():
