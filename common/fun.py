@@ -10,7 +10,7 @@ log = HandleLog(__name__,i_c_level=10,i_f_level=20)
 
 def checkSqlContext(sql_context):
     message = MESSAGE.copy()
-    message['fun'] = 'fun checkSqlContext'
+    message['info']['fun'] = 'fun checkSqlContext'
 
     info = f' WARNING 有破坏活动！ \n{sql_context}'
     s_sql = sql_context.lower()
@@ -50,7 +50,7 @@ def checkSqlContext(sql_context):
 # 把文本变为LIST，输入STR，输出LIST ,换行
 def sqlContextToList(sql_str)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'utils sqlContextToList'
+    message['info']['fun'] = 'utils sqlContextToList'
     log.debug(sql_str,'sql_str')
 
     res = iter(sql_str)
@@ -85,7 +85,7 @@ def sqlContextToList(sql_str)->dict:
 # 定义一个函数，用来匹配外部DICT,入参，LIST和DICT，输出STR
 def swapContent(quary_list,paramter_dict)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'utils swapContent'
+    message['info']['fun'] = 'utils swapContent'
     log.debug(paramter_dict,'paramter_dict')
 
     if not quary_list:
@@ -144,12 +144,11 @@ def swapContent(quary_list,paramter_dict)->dict:
     return message
 
 
-
 # 校验手机号码
 def checkPhone(phone)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'checkPhone'
-    log.debug(f">>> {message['fun']} 检查通用查询的入参 \n{phone}  ")
+    message['info']['fun'] = 'checkPhone'
+    log.debug(f">>> {message['info']['fun']} 检查通用查询的入参 \n{phone}  ")
     s_phone = str(phone)
     if len(s_phone) == 11 and s_phone[0:1] == '1':
         message.update({'code':200})
@@ -161,7 +160,7 @@ def checkPhone(phone)->dict:
 # 检查数据库连接
 def ckDbLink(s_project='YM'):   # 传入的项目缩写
     message = MESSAGE.copy()
-    message['fun'] = 'fun ckDbLink'
+    message['info']['fun'] = 'fun ckDbLink'
     log.debug(s_project,'ckDbLink 0')
 
     if s_project == 'YM':
@@ -186,27 +185,10 @@ def ckDbLink(s_project='YM'):   # 传入的项目缩写
     return message
 
 
-# 检查更新要求
-def ckUpInfo(sid:int,s_project:str,s_db:str):   # 传入的项目缩写
-    message = MESSAGE.copy()
-    message['fun'] = 'fun ckUpInfo'
-
-    jl_cuda = GLOBAL['CUDA']    # jl_字典的子项是列表
-    if sid != SID:
-        message.update({'msg':f"sid 不一致 传入标识 {sid} 环境标识 {SID}"})
-    elif s_project not in jl_cuda.keys(): 
-        message.update({'msg':f"项目全局 set_global 未配置 传入 {s_project} "})
-    elif s_db not in jl_cuda[s_project]: 
-        message.update({'msg':f"CUDA中 {s_project} 未配置 {s_db}"})
-    else:
-        message.update({'code':200})
-    return message
-
-
 # 平台 按系统的通用查询
 def cmmFetchone(sqlid:str,s_table='common_query')->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'fun cmmFetchone'
+    message['info']['fun'] = 'fun cmmFetchone'
 
     with engine().connect() as conn:
         s_= f"SELECT project,sql_context,sql_name,remark FROM {s_table} WHERE sqlid ='{sqlid}';"
@@ -214,7 +196,8 @@ def cmmFetchone(sqlid:str,s_table='common_query')->dict:
             res = conn.exec_driver_sql(s_)
             l_ds = res.fetchone()
             if l_ds:
-                message.update({'project':l_ds[0],'sql_context':l_ds[1],'sql_name':l_ds[2],'remark':l_ds[3],'code':200})
+                message['code'] = 200
+                message.update({'project':l_ds[0],'sql_context':l_ds[1],'sql_name':l_ds[2],'remark':l_ds[3]})
             else:
                 message.update({'msg':f"{s_table} 中 SQLID {sqlid} 未查询到对应记录！",'remark':s_})
         except Exception as e:
@@ -227,9 +210,9 @@ def cmmFetchone(sqlid:str,s_table='common_query')->dict:
 # MYSQL 拼接时用的时候处理 不处理kv
 def cmmQueryMysql(s_db:str,s_project:str,s_sql:str,sqlid:str,i_page_num=1,i_page_size=1000)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'fun cmmQueryMysql'
-    message['sqlid'] = sqlid
-    log.debug(f">>> {message['fun']} 执行语句 :\n{s_sql}")
+    message['info']['fun'] = 'fun cmmQueryMysql'
+    message['info']['sqlid'] = sqlid
+    log.debug(f">>> {message['info']['fun']} 执行语句 :\n{s_sql}")
 
     i_total = 1
     s_total_sql = f"select count(*) AS total from ({s_sql}) t1"
@@ -243,7 +226,7 @@ def cmmQueryMysql(s_db:str,s_project:str,s_sql:str,sqlid:str,i_page_num=1,i_page
                 log.error(message,'s_total_sql')
                 return message
             if i_total == 0:
-                message.update({'data':{'fields':[],'datalist':[],'total':i_total,'pageNum':i_page_num,'pageSize':i_page_size},'code':200,'msg':f"> total:{i_total}"})
+                message.update({'data':{'fields':[],'datalist':[],'total':0,'pageNum':i_page_num,'pageSize':i_page_size},'code':200,'msg':"No Data"})
                 return message
             elif i_total > i_page_size:
                 s_sql = f"{s_sql} LIMIT {(i_page_num-1) * i_page_size},{i_page_size}"
@@ -253,21 +236,21 @@ def cmmQueryMysql(s_db:str,s_project:str,s_sql:str,sqlid:str,i_page_num=1,i_page
             i_rc = res.rowcount
             l_ds = res.fetchall()
             l_field = list(res.keys())
-            message.update({'data':{'datalist':l_ds,'fields':l_field,'total':i_total,'pageNum':i_page_num,'pageSize':i_page_size},'code':200,"count":i_rc,'msg':f"> total:{i_total}"})   
+            message.update({'data':{'datalist':l_ds,'fields':l_field,'total':i_total,'pageNum':i_page_num,'pageSize':i_page_size},'code':200,'msg':"SUCESS"})   
         except Exception as e:
             message.update({'remark':s_sql.replace('\r\n',' '),'msg':str(e)})
             log.error(message,'s_sql')
             return message
-        log.debug(f"<<< {message['fun']} 命中数：{i_rc}")
+        log.debug(f"<<< {message['info']['fun']} 命中数：{i_rc}")
     return message
 
 
 # MYSQL 执行 拼接时用的时候处理 不处理kv
 def cmmExecMysql(s_db:str,s_project:str,s_sql:str,sqlid:str)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'fun cmmExecMysql'
+    message['info']['fun'] = 'fun cmmExecMysql'
     message['sqlid'] = sqlid
-    log.debug(f">>> {message['fun']} 执行语句 :{s_sql}")
+    log.debug(f">>> {message['info']['fun']} 执行语句 :{s_sql}")
 
     with engine(s_db,s_project).connect() as conn:
         try:
@@ -279,14 +262,14 @@ def cmmExecMysql(s_db:str,s_project:str,s_sql:str,sqlid:str)->dict:
             message.update({'remark':s_sql.replace('\r\n',' '),'msg':str(e)})
             log.error(message)
             return message
-    log.debug(f"<<< {message['fun']} 更新数：{i_rc}")
+    log.debug(f"<<< {message['info']['fun']} 更新数：{i_rc}")
     return message
 
 
 # 查询单号信息
 def billInfo(s_billid: str)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'billInfo'
+    message['info']['fun'] = 'billInfo'
 
     if len(s_billid) != 15:
         message.update({'msg':f"billid {s_billid} 长度 不合规"})
@@ -312,7 +295,7 @@ def billInfo(s_billid: str)->dict:
 # 查询单号信息
 def billDel(s_billid: str)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'billDel'
+    message['info']['fun'] = 'billDel'
 
     j_ = l2d(billInfo(s_billid))
     log.debug(j_,'billInfo message')
@@ -340,7 +323,7 @@ def billDel(s_billid: str)->dict:
 # 单号生成
 def billId(s_bill_key: str,bltid:int)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'billid'
+    message['info']['fun'] = 'billid'
 
     i_bill_key = GLOBAL['BILL_KEY'].get(s_bill_key.upper(),-99)
     s_weekday = str(pd.Timestamp.now().weekday() +1)
@@ -366,9 +349,9 @@ def billId(s_bill_key: str,bltid:int)->dict:
 # MSSQL
 def commonQueryMssql(s_db:str,s_project:str,s_sql:str,sqlid:str)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'fun commonQueryMssql'
+    message['info']['fun'] = 'fun commonQueryMssql'
     message['sqlid'] = sqlid
-    log.debug(f">>> {message['fun']} MSSQL {s_project} 执行:{s_sql}")
+    log.debug(f">>> {message['info']['fun']} MSSQL {s_project} 执行:{s_sql}")
     i_rc = 0
     # i_total = 0
     # s_total_sql = f"select count(*) AS total from ({s_sql}) t1"
@@ -379,20 +362,20 @@ def commonQueryMssql(s_db:str,s_project:str,s_sql:str,sqlid:str)->dict:
             # dbcur.execute(s_sql.encode('cp936'))
             l_ds = res.mappings().all()
             i_rc = res.rowcount     #<<
-            message.update({'data':{'datalist':l_ds},'code':200,'count':i_rc,'msg':f">>> {message['fun']} 命中数:{i_rc}"})
+            message.update({'data':{'datalist':l_ds},'code':200,'count':i_rc,'msg':f">>> {message['info']['fun']} 命中数:{i_rc}"})
         except Exception as e:
             message.update({'remark':s_sql.replace('\r\n',' ').replace('\t',' '),'msg':f"{str(e)}"})
             log.error(message)
             return message
-    log.debug(f"<<< {message['fun']} MS命中数：{i_rc}")            
+    log.debug(f"<<< {message['info']['fun']} MS命中数：{i_rc}")            
     return message
 
 
 # REDIS 执行 具体功能 明确入参
 def cmmRedis(redis_name:str,time_expire=0,fields_list =[],data_list=[],redis_db= 0):
     message = MESSAGE.copy()
-    message['fun'] = 'commonJobs_fun cmmRedis'
-    log.debug(f">>> {message['fun']} name {redis_name} :{fields_list}")
+    message['info']['fun'] = 'commonJobs_fun cmmRedis'
+    log.debug(f">>> {message['info']['fun']} name {redis_name} :{fields_list}")
 
     pipe = rs.pipeline()
     _s = len(fields_list)
@@ -479,8 +462,8 @@ def checkCommonRedisArgs(args_dict):
 # 【角色】TWO 查用户角色 返回一个STR 定制化
 def rolesList(userid)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'rolesList'
-    log.debug(f">>> {message['fun']} 查用户角色 返回一个去重后的 LIST")
+    message['info']['fun'] = 'rolesList'
+    log.debug(f">>> {message['info']['fun']} 查用户角色 返回一个去重后的 LIST")
 
     try:
         df = pd.read_sql_query("""SELECT role_code FROM ct_user2role WHERE userid = %(userid)s group by role_code;"""
@@ -501,8 +484,8 @@ def rolesList(userid)->dict:
 # 用户登陆 定制化 /auth/v1/login
 def login(userid):
     message = MESSAGE.copy()
-    message['fun'] = 'login'
-    log.debug(f">>> {message['fun']} 用户登陆 ")
+    message['info']['fun'] = 'login'
+    log.debug(f">>> {message['info']['fun']} 用户登陆 ")
 
     i_rc = 0
     s_sql = "SELECT userid,user_name FROM mdm_user WHERE sid = %s AND userid = %s"
@@ -526,8 +509,8 @@ def login(userid):
 
 def menuIds(l_role:list):
     message = MESSAGE.copy()
-    message['fun'] = 'menuIds'
-    log.debug(f">>> {message['fun']} MENU THREE 菜单权限  输入一个ROLES 返回 权限IDS ")
+    message['info']['fun'] = 'menuIds'
+    log.debug(f">>> {message['info']['fun']} MENU THREE 菜单权限  输入一个ROLES 返回 权限IDS ")
 
     s_sql = """
 	SELECT a.menu_code FROM ct_permission2menu a
@@ -554,8 +537,8 @@ def menuIds(l_role:list):
 # 菜单增加 meta: {icon: "MessageBox", title: "超级表格", isLink: "", isHide: false, isFull: false, isAffix: false, isKeepAlive: true}
 def menuListPermission(ids=None):
     message = MESSAGE.copy()
-    message['fun'] = 'menuListPermission'
-    log.debug(f">>> {message['fun']} 返回MENU菜单权限 ids {ids}")
+    message['info']['fun'] = 'menuListPermission'
+    log.debug(f">>> {message['info']['fun']} 返回MENU菜单权限 ids {ids}")
 
     l_res = list()
 
@@ -619,8 +602,8 @@ def menuListPermission(ids=None):
 # 【按钮】 之前的dict 变成list
 def buttonPermission(roles:str)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'buttonPermission'
-    log.debug(f">>> {message['fun']} 返回页面按钮权限 ")
+    message['info']['fun'] = 'buttonPermission'
+    log.debug(f">>> {message['info']['fun']} 返回页面按钮权限 ")
 
     s_sql = """SELECT d.menu_code,a.button_code FROM ct_permission2button a
 	INNER JOIN set_permission b ON a.permission_code = b.permission_code
@@ -646,8 +629,8 @@ def buttonPermission(roles:str)->dict:
 # 获取Bearer
 def getBearer()->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'getBearer'
-    log.debug(f">>> {message['fun']}")
+    message['info']['fun'] = 'getBearer'
+    log.debug(f">>> {message['info']['fun']}")
 
     if rs.exists('job_bearer'):
         s_bearer = rs.get('job_bearer')
@@ -683,8 +666,8 @@ def getBearer()->dict:
 # 推送JOB任务
 def postJob(jobid:int,j_args={})->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'postJob'
-    log.debug(f">>> {message['fun']}")
+    message['info']['fun'] = 'postJob'
+    log.debug(f">>> {message['info']['fun']}")
 
     j_ = getBearer()
     if j_['code']>200:

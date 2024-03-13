@@ -29,19 +29,27 @@ DB_LINK = CF.DB_LINK if isinstance(CF.DB_LINK,dict) else {}
 PF_LINK = CF.PF_LINK if isinstance(CF.PF_LINK,dict) else {}
 SID = CF.SID if isinstance(CF.SID,int) else 0
 ADMIN = CF.ADMIN if isinstance(CF.ADMIN,list) else []
-
-CLIENT ="Dev:10.56"
-VER = 240201
 PROJECT = "YM"
+
+if SID == 5:
+    CLIENT ="Dev:10.56"
+elif SID == 2:
+    CLIENT ="Beta:10.56"
+elif SID == 1:
+    CLIENT ="Pro:10.56"
+else:
+    CLIENT ="Oth:10.56"
+VER = 240313
+
 MESSAGE = {
     "code": 500,
-    "sid":  SID,
-    "count":  0,
     "msg":  '',
-    "project":PROJECT,
-    "client":CLIENT,
-    "ver":VER,
-    "author":'姚鸣'
+    "info":{
+        "sid":  SID,
+        "project":PROJECT,
+        "client":CLIENT,
+        "ver":VER,
+        "author":'姚鸣'},
 }
 LTD = "Copyright© 2023 by SH-Mart"
 IGNORE = {'id','ldt','cdt'}
@@ -194,10 +202,10 @@ def msgJson(data):
     return json.dumps(data,cls=DateEncoder,ensure_ascii=False)
 
 def msgWrapper(ldt:int,s_func_remark=''):
-    j_msg = MESSAGE.copy()
     def reMsg(func):
         def wrapped_function(*args, **kwargs):
-            j_msg['Fac'] = func.__name__
+            j_msg = MESSAGE.copy()
+            j_msg['info']['fac'] = func.__name__
             start_time = time.time()
             start_strftime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
@@ -206,7 +214,7 @@ def msgWrapper(ldt:int,s_func_remark=''):
             end_strftime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             d_time = time.time() - start_time
             j_msg.update(j_res)
-            j_msg.update({'start_time':start_strftime,'end_time':end_strftime,'times':round(d_time,2),"ldt":ldt,'func_remark':s_func_remark})
+            j_msg['info'].update({'start_time':start_strftime,'end_time':end_strftime,'times':round(d_time,2),"ldt":ldt,'func_remark':s_func_remark})
             return j_msg
         return wrapped_function
     return reMsg
@@ -224,9 +232,7 @@ class threadLogs(threading.Thread):
         FAC = self.fac
         LOGS = {
     "commonQuery":    "insert into log_common_query(userid,sqlid,parm_json)values(%s,%s,%s)",
-    "commonUpdate":   "insert into log_common_update(userid,sqlid,parm_json)values(%s,%s,%s)",
     "commonRedis":    "insert into log_common_redis(userid,redis_name,parm_json)values(%s,%s,%s)",
-    "commonBill":     "insert into log_common_bill(userid,billid,parm_json)values(%s,%s,%s)",
     "authLogin":      "insert into log_auth_login(code_from,userid,parm_json)values(%s,%s,%s)",
     "postJob":        "insert into log_post_job(jobid,userid,parm_json)values(%s,%s,%s)",
     }

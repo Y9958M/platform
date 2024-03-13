@@ -1,1 +1,1 @@
-nameko.exe run --config amqp.yaml Service:PlatformService
+nameko.exe run --config amqpDev.yaml Service:PlatformService

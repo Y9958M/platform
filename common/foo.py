@@ -1,7 +1,7 @@
 
 from .cmm import MESSAGE,ADMIN,HandleLog
-from .fun import (cmmFetchone,checkSqlContext,ckDbLink,sqlContextToList,swapContent,ckUpInfo
-                  ,cmmQueryMysql,commonQueryMssql,cmmExecMysql,cmmRedis
+from .fun import (cmmFetchone,checkSqlContext,ckDbLink,sqlContextToList,swapContent
+                  ,cmmQueryMysql,commonQueryMssql,cmmRedis
                   ,checkPhone,rolesList,menuIds,login,menuListPermission,buttonPermission
                   ,postJob,billId,billInfo,billDel)
 
@@ -17,13 +17,12 @@ log = HandleLog(__name__,i_c_level=10,i_f_level=20)
 # 通用查询 no KV
 def commonQueryMain(j_args)->dict:
     message = MESSAGE.copy()
-    message['fun'] = 'foo commonQueryMain'
-    log.debug(f">> {message['fun']} 通用查询 入参 {j_args}")
+    message['info']['fun'] = 'foo commonQueryMain'
+    log.debug(f">> {message['info']['fun']} 通用查询 入参 {j_args}")
 
     # 初始返回信息格式
     message.update({'msg':'通用查询','remark':'','data':{
         'datalist': [],
-        'count':    0,
         'fields':   [],
         'pageNum':1,'pageSize':100,'total':0}})
 
@@ -37,7 +36,7 @@ def commonQueryMain(j_args)->dict:
         message['data']['pageNum']  = i_page_num
         message['data']['pageSize'] = i_page_size
         message['data']['total']    = 0
-        message['sqlid']   = sqlid
+        # message['sqlid'] = sqlid
     
     j_ = dict() # 查询平台库 platform
     j_.update(cmmFetchone(sqlid,'common_query'))
@@ -46,7 +45,7 @@ def commonQueryMain(j_args)->dict:
     else:
         sql_context =   j_['sql_context']
         s_project   =   j_['project']
-        message['sql_name'] = j_['sql_name']
+        message['info']['sql_name'] = j_['sql_name']
         message['remark']   = j_['remark']
     j_.clear()  # check sql_context 防注入检查'
     j_.update(checkSqlContext(sql_context))
@@ -81,72 +80,11 @@ def commonQueryMain(j_args)->dict:
     return message
 
 
-# 通用更新 只能在支持的表中处理
-def commonUpdateMain(j_args):
-    message = MESSAGE.copy()
-    message['fun'] = 'foo commonUpdateMain'
-    log.debug(f">> {message['fun']} 通用更新模块 DO 只能在支持的表中处理 {j_args}")
-
-    if 'sid' not in j_args:
-        message.update({'msg':"need sid"})
-        return message
-    else:
-        sid = j_args['sid']
-
-    if 'sqlid' not in j_args:
-        message.update({'msg':"need sqlid"})
-        return message
-    else:
-        sqlid = j_args['sqlid']
-
-    j_ = dict() # 查询平台库 通用更新 从注册库取 更新有权限
-    j_.update(cmmFetchone(sqlid,"common_update"))
-    if j_['code'] > 200:
-        return j_
-    else:
-        sql_context =   j_['sql_context']
-        s_project   =   j_['project']
-        message['sql_name'] = j_['sql_name']
-        message['remark']   = j_['remark']
- 
-    j_.clear()  # 检查 DB_LINK 连接
-    j_.update(ckDbLink(s_project))
-    if j_['code'] >200:
-        return j_
-    else:
-        j_db_info = j_['data']
-
-    j_.clear()  # 防止超范围的更新
-    j_.update(ckUpInfo(sid,j_db_info['PROJECT'],j_db_info['DB']))
-    if j_['code'] >200:
-        return j_
-
-    j_.clear()  # 处理 sql_context
-    j_.update(sqlContextToList(sql_context))
-    if  j_['code'] >200:
-        return j_
-    else:
-        l_sql = j_['data']
-
-    j_.clear()  # 查询拼装
-    j_.update(swapContent(l_sql,j_args))
-    if j_['code'] >200:
-        return j_
-    else:
-        s_sql = j_['data']
-
-    if j_db_info['TYPE'] == 'MYSQL':
-        message.update(cmmExecMysql(j_db_info['DB'],j_db_info['PROJECT'],s_sql,sqlid)) 
-    else:
-        message.update({'msg':f"{j_db_info['TYPE']} 未能支持 数据库类型"})     
-    return message
-
-
 # 通用缓存数据(存 入参 KEY {字典} 过期时间)
 def commonRedisMain(j_args:dict):
     message = MESSAGE.copy()
-    message['fun'] = 'foo commonIntoRedis'
-    log.debug(f">> {message['fun']} 通用缓存数据(存 入参 KEY 字典 过期时间) \n{j_args}")
+    message['info']['fun'] = 'foo commonIntoRedis'
+    log.debug(f">> {message['info']['fun']} 通用缓存数据(存 入参 KEY 字典 过期时间) \n{j_args}")
     # 检查入参
     j_ = dict()
     if 'rs_name' not in j_args:
@@ -217,8 +155,8 @@ def commonRedisMain(j_args:dict):
 # 通用单据信息 返回单据所有信息
 def cmmBillInfoMain(s_billid:str)-> dict:
     message = MESSAGE.copy()
-    message['fun'] = 'cmmBillInfoMain'
-    log.debug(f">>> {message['fun']} 通用单据信息 {s_billid}")
+    message['info']['fun'] = 'cmmBillInfoMain'
+    log.debug(f">>> {message['info']['fun']} 通用单据信息 {s_billid}")
 
     return billInfo(str(s_billid))
 
@@ -226,8 +164,8 @@ def cmmBillInfoMain(s_billid:str)-> dict:
 # 通用删除单据
 def cmmBillDelMain(s_billid:str)-> dict:
     message = MESSAGE.copy()
-    message['fun'] = 'cmmBillDelMain'
-    log.debug(f">>> {message['fun']} 通用删除状态为0或1状态的单据 {s_billid}")
+    message['info']['fun'] = 'cmmBillDelMain'
+    log.debug(f">>> {message['info']['fun']} 通用删除状态为0或1状态的单据 {s_billid}")
 
     return billDel(str(s_billid))
 
@@ -235,8 +173,8 @@ def cmmBillDelMain(s_billid:str)-> dict:
 # 通用单据号 3K1T6D4F1W
 def cmmBillidMain(s_bill_key:str,bltid:1)-> dict:
     message = MESSAGE.copy()
-    message['fun'] = 'cmmBillidMain'
-    log.debug(f">>> {message['fun']} 通用单据号 3K1T6D4F1W {s_bill_key}")
+    message['info']['fun'] = 'cmmBillidMain'
+    log.debug(f">>> {message['info']['fun']} 通用单据号 3K1T6D4F1W {s_bill_key}")
 
     return billId(s_bill_key,bltid)
 
@@ -245,8 +183,8 @@ def cmmBillidMain(s_bill_key:str,bltid:1)-> dict:
 # 用户登录
 def authLoginMain(userid):
     message = MESSAGE.copy()
-    message['fun'] = 'authLoginMain'
-    log.debug(f">>> {message['fun']} 查手机号 isUserExist {userid}")
+    message['info']['fun'] = 'authLoginMain'
+    log.debug(f">>> {message['info']['fun']} 查手机号 isUserExist {userid}")
     j_ = dict()
 
     j_ = checkPhone(userid)
@@ -259,8 +197,8 @@ def authLoginMain(userid):
 # 【菜单】权限 
 def authMenuListMain(userid):
     message = MESSAGE.copy()
-    message['fun'] = 'authMenuListMain'
-    log.debug(f">>> {message['fun']} 菜单相关权限 {userid} ")
+    message['info']['fun'] = 'authMenuListMain'
+    log.debug(f">>> {message['info']['fun']} 菜单相关权限 {userid} ")
     j_ = dict()
 
     log.debug("ONE 【菜单】先查 用户 USER_NO 是否管理员")
@@ -291,8 +229,8 @@ def authMenuListMain(userid):
 # 【按钮】权限
 def authUserButtonMain(userid):
     message = MESSAGE.copy()
-    message['fun'] = 'authUserButtonMain'
-    log.debug(f">>> {message['fun']} ONE 【按钮】先查 用户 userid 是否管理员")
+    message['info']['fun'] = 'authUserButtonMain'
+    log.debug(f">>> {message['info']['fun']} ONE 【按钮】先查 用户 userid 是否管理员")
 
     if int(userid) in ADMIN:
         log.warning(userid,"管理员 【按钮】")
@@ -317,7 +255,7 @@ def authUserButtonMain(userid):
 # JOB任务推送
 def postJobMain(jobid:int,j_args={}):
     message = MESSAGE.copy()
-    message['fun'] = 'postJobMain'
-    log.debug(f">>> {message['fun']} JOBID:{jobid} 参数:{j_args}")
+    message['info']['fun'] = 'postJobMain'
+    log.debug(f">>> {message['info']['fun']} JOBID:{jobid} 参数:{j_args}")
 
     return postJob(jobid,j_args)

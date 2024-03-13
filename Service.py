@@ -8,7 +8,7 @@ from nameko.dependency_providers import DependencyProvider
 from nameko.rpc import rpc
 
 from common.cmm import HandleLog, msgJson
-from common.fac import commonQuery, commonUpdate, commonRedis,commonBillid,commonBillInfo,authLogin, authUserButton, authMenuList, postJob
+from common.fac import commonQuery, commonRedis,commonBillid,commonBillInfo,authLogin, authUserButton, authMenuList, postJob
 
 log = HandleLog('Service',i_c_level=30,i_f_level=30)
 
@@ -91,9 +91,9 @@ class PlatformService(object):
     def cQ(self, j_args):
         return msgJson(commonQuery(j_args))
 
-    @rpc    # 公共更新
-    def cU(self, j_args):
-        return msgJson(commonUpdate(j_args))
+    # @rpc    # 公共更新  313起就没了
+    # def cU(self, j_args):
+    #     return msgJson(commonUpdate(j_args))
 
     @rpc
     def cPostJob(self,jobid,userid,j_args):
