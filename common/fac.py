@@ -11,7 +11,7 @@ from .foo import commonQueryMain,commonRedisMain,authLoginMain, authUserButtonMa
 def commonQuery(args_dict):
     j_res = commonQueryMain(args_dict)
     j_res['params'] = args_dict
-    logs = threadLogs(thread_id= j_res.get('userid',-99),thread_name= j_res.get('sqlid','NULL'),fac= "commonQuery",args_dict= j_res)
+    logs = threadLogs(thread_id= args_dict.get('userid',-99),thread_name= args_dict.get('sqlid','NULL'),fac= "commonQuery",args_dict= j_res)
     logs.start()
     return j_res
 
@@ -29,7 +29,7 @@ def commonQuery(args_dict):
 def commonRedis(args_dict):
     j_res = commonRedisMain(args_dict)
     j_res['params'] = args_dict
-    logs = threadLogs(thread_id= j_res.get('userid',-99),thread_name= j_res.get('rs_name','rs_name'),fac= "commonQuery",args_dict= j_res)
+    logs = threadLogs(thread_id= args_dict.get('userid',-99),thread_name= args_dict.get('rs_name','rs_name'),fac= "commonQuery",args_dict= j_res)
     logs.start()
     return j_res
 
@@ -56,7 +56,7 @@ def commonBillInfo(s_billid:str,s_act='query'):
 def authLogin(userid,api_no:int):
     j_res = authLoginMain(userid)
     j_res['params'] = {'userid':userid,'api_no':api_no}
-    logs = threadLogs(thread_id= j_res.get('api_no',-99),thread_name= userid,fac= "commonQuery",args_dict= j_res)
+    logs = threadLogs(thread_id= api_no,thread_name= userid,fac= "authLogin",args_dict= j_res)
     logs.start()
     return j_res
 
@@ -83,3 +83,14 @@ def postJob(jobid:int,userid,j_args={}):
     logs = threadLogs(thread_id = jobid ,thread_name = userid,fac = j_res['Fac'],args_dict = j_res)
     logs.start()
     return j_res
+
+
+# @msgWrapper(ldt=20240314,s_func_remark='商品档案信息')
+# def prdInfo(jobid:int,userid,j_args={}):
+#     j_res = postJobMain(jobid,j_args)
+#     j_res['params'] = j_args
+#     j_res.update({'jobid':jobid})
+#     logs = threadLogs(thread_id = jobid ,thread_name = userid,fac = j_res['Fac'],args_dict = j_res)
+#     logs.start()
+#     return j_res
+

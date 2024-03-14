@@ -18,27 +18,20 @@ import importlib
 import platform
 import pandas as pd
 # import numpy as np
-
-s_os_path = 'D:/home' if platform.system() == 'Windows' else '/home'
-
-CF = importlib.machinery.SourceFileLoader('config', f'{s_os_path}/platform/config.py').load_module()
-
 # & d:/CODE/platform/.venv/Scripts/pip.exe install openpyxl
 # 要提供给其它项目调用的共用方法
+s_os_path = 'D:/home' if platform.system() == 'Windows' else '/home'
+CF = importlib.machinery.SourceFileLoader('config', f'{s_os_path}/platform/config.py').load_module()
+ENV = {0:'Init',1:'Pro',2:'Beta',5:'Dev',6:'Online'}
+LTD = "Copyright© 2023 by SH-Mart"
+IGNORE = {'id','ldt','cdt'}
 DB_LINK = CF.DB_LINK if isinstance(CF.DB_LINK,dict) else {}
 PF_LINK = CF.PF_LINK if isinstance(CF.PF_LINK,dict) else {}
 SID = CF.SID if isinstance(CF.SID,int) else 0
 ADMIN = CF.ADMIN if isinstance(CF.ADMIN,list) else []
-PROJECT = "YM"
 
-if SID == 5:
-    CLIENT ="Dev:10.56"
-elif SID == 2:
-    CLIENT ="Beta:10.56"
-elif SID == 1:
-    CLIENT ="Pro:10.56"
-else:
-    CLIENT ="Oth:10.56"
+PROJECT = "YM"
+IP = '10.56'
 VER = 240313
 
 MESSAGE = {
@@ -47,12 +40,10 @@ MESSAGE = {
     "info":{
         "sid":  SID,
         "project":PROJECT,
-        "client":CLIENT,
+        "client":f"{ENV[SID]} {IP}",
         "ver":VER,
         "author":'姚鸣'},
 }
-LTD = "Copyright© 2023 by SH-Mart"
-IGNORE = {'id','ldt','cdt'}
 
 logging._srcfile = None
 logging.logThreads = 0
@@ -61,7 +52,7 @@ logging.logProcesses = 0
 logging.thread = None  # type: ignore
 log_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'logs')  # log_path为存放日志的路径
 if not os.path.exists(log_path): os.mkdir(log_path)  # 若不存在logs文件夹，则自动创建  # noqa: E701
-s_log_file = os.path.join(log_path,f"mp-{datetime.now().strftime('%Y%m%d')}.log")
+s_log_file = os.path.join(log_path,f"{PROJECT.lower()}-{datetime.now().strftime('%Y%m%d')}.log")
 
 
 rs = redis.Redis(connection_pool=redis.ConnectionPool(
