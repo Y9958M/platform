@@ -181,11 +181,14 @@ def cmmBillidMain(s_bill_key:str,bltid:1)-> dict:
 
 
 # 用户登录
-def authLoginMain(userid):
+def authLoginMain(j_args):
     message = MESSAGE.copy()
     message['info']['fun'] = 'authLoginMain'
-    log.debug(f">>> {message['info']['fun']} 查手机号 isUserExist {userid}")
+    log.debug(f">>> {message['info']['fun']} 查手机号 isUserExist {j_args}")
     j_ = dict()
+    userid = j_args.get('phone_no','')
+    if not userid:
+        pass
 
     j_ = checkPhone(userid)
     if j_['code'] > 200:

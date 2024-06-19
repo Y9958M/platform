@@ -32,7 +32,7 @@ ADMIN = CF.ADMIN if isinstance(CF.ADMIN,list) else []
 
 PROJECT = "YM"
 IP = '10.56'
-VER = 240313
+VER = 240615
 
 MESSAGE = {
     "code": 500,
@@ -212,36 +212,30 @@ def msgWrapper(ldt:int,s_func_remark=''):
 
 # 要区分一下 查询 JOB 单据 job_custom_logs 
 class threadLogs(threading.Thread):
-    def __init__(self,thread_id,thread_name:str,fac:str,args_dict={}):
+    def __init__(self,from_code:str,key_code:str,args_in={},args_out={}):
         threading.Thread.__init__(self)
-        self.thread_id = thread_id
-        self.thread_name = thread_name
-        self.args_dict = args_dict
-        self.fac = fac
-
+        self.from_code = from_code
+        self.key_code = key_code
+        self.args_in = args_in
+        self.args_out = args_out
+        
     def run(self):
-        FAC = self.fac
-        LOGS = {
-    "commonQuery":    "insert into log_common_query(userid,sqlid,parm_json)values(%s,%s,%s)",
-    "commonRedis":    "insert into log_common_redis(userid,redis_name,parm_json)values(%s,%s,%s)",
-    "authLogin":      "insert into log_auth_login(code_from,userid,parm_json)values(%s,%s,%s)",
-    "postJob":        "insert into log_post_job(jobid,userid,parm_json)values(%s,%s,%s)",
-    }
+        from_code = self.from_code
+        key_code = self.key_code
+
         time.sleep(3)
         conn = engine().connect()
         try:
-            if FAC in LOGS:
-                args = self.args_dict
-                if FAC in ['commonQuery'] and 'data' in args:
-                    if 'datalist' in args['data']:
-                        args['tip'] ="3s del data_list!"
-                        del args['data']['datalist']
-                conn.exec_driver_sql(LOGS[FAC],(self.thread_id,self.thread_name,msgJson(args)))
-                conn.commit()
-            else:
-                conn.exec_driver_sql("insert into log_def(threadid,thread_name,parm_json)values(%s,%s,%s)",
-                (self.thread_id,self.thread_name,msgJson(self.args_dict)))
-                conn.commit()
+            args_in = self.args_in
+            args_out = self.args_out
+
+            if from_code in ['commonQuery'] and 'data' in args_out:
+                if 'datalist' in args_out['data']:
+                    args_out['tip'] ="3s del data_list!"
+                    del args_out['data']['datalist']
+            conn.exec_driver_sql("insert into logs_platform(from_code,key_code,args_in,args_out)values(%s,%s,%s,%s)",(from_code,key_code,msgJson(args_in),msgJson(args_out)))
+            conn.commit()
+
         except Exception as e:
             print("threadLogs",e)
 

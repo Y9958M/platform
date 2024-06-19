@@ -1,5 +1,6 @@
 # from sqlalchemy import create_engine
 # from sqlalchemy.orm import sessionmaker
+from typing import List
 from sqlalchemy import Column, Computed, DateTime, Enum, ForeignKeyConstraint, Index, JSON, String, Text, text  # noqa: F401
 from sqlalchemy.dialects.mysql import BIGINT, INTEGER, TINYINT, VARCHAR
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship

@@ -11,7 +11,6 @@ from common.cmm import HandleLog, msgJson
 from common.fac import commonQuery, commonRedis,commonBillid,commonBillInfo,authLogin, authUserButton, authMenuList, postJob
 
 log = HandleLog('Service',i_c_level=30,i_f_level=30)
-
 # author  :don
 # date    :2024-02-02
 # description: 提供中台微服务提供 传输数据用 JSON
@@ -109,8 +108,8 @@ class PlatformService(object):
     
     # AUTH -------------------- 登录要验证 平台标识 code_from authMenuList 可以限制访问 ----------------------------------------------------------
     @rpc    
-    def cAuthLogin(self,userid:str,code_from:str):
-        return msgJson(authLogin(userid,code_from))
+    def cAuthLogin(self,j_args):
+        return msgJson(authLogin(j_args))
 
     @rpc    
     def cAuthMenu(self,userid:int):
