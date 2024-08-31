@@ -3,8 +3,10 @@ from .cmm import MESSAGE,ADMIN,HandleLog
 from .fun import (cmmFetchone,checkSqlContext,ckDbLink,sqlContextToList,swapContent
                   ,cmmQueryMysql,commonQueryMssql,cmmRedis
                   ,checkPhone,rolesList,menuIds,login,menuListPermission,buttonPermission
-                  ,postJob,billId,billInfo,billDel)
-
+                  ,billId,billInfo,billDel
+                  ,checkDdUser)
+from .funApi import getAccessToken,getDdUser,postJob
+from .funSet import setDdUser,getPermissionBraid
 
 log = HandleLog(__name__,i_c_level=10,i_f_level=20)
 
@@ -195,6 +197,51 @@ def authLoginMain(j_args):
         return j_
 
     return login(userid)
+
+# dd用户登录
+def ddLoginMain(j_args):
+    message = MESSAGE.copy()
+    message['info']['fun'] = 'ddLoginMain'
+    log.debug(f">>> {message['info']['fun']} 查用户userid {j_args}")
+    j_ = dict()
+    user_code = j_args.get('user_code','')
+    if not user_code:
+        log.warning(j_args,'没取得用户 user_code')
+        message.update({'msg':'无 user_code ?'})
+        return message
+    # 检查 dd_user里
+    j_ = checkDdUser(user_code)
+
+    if j_['code'] > 300:
+        return message
+    elif j_['code'] > 200:
+        j_ = getAccessToken()
+        if j_['code'] > 200:
+            return j_
+        else:
+            j_ = getDdUser(j_.get('access_token',''),{'userid':user_code})
+            if j_['code']>200:
+                log.warning(j_)
+                return j_
+            else:
+                log.debug(j_,'返回钉钉的员工信息')
+                j_ = setDdUser(j_)
+                if j_['code']> 200:
+                    return j_
+                else:
+                    userid = j_['userid']
+                    log.info(userid,'userid 已取得')
+                    return login(userid)
+    else:
+        return login(j_['userid'])
+    
+
+def ddGetPermissionBraidMain(j_args):
+    message = MESSAGE.copy()
+    message['info']['fun'] = 'ddGetPermissionBraidMain'
+    log.debug(f">>> {message['info']['fun']} 查部门对应门店权限 {j_args}")
+    dept_code = j_args.get('dept_code','')
+    return getPermissionBraid(dept_code)
 
 
 # 【菜单】权限 

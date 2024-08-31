@@ -1,6 +1,8 @@
 # -*- coding:utf-8 -*-
 from .cmm import threadLogs,msgWrapper
-from .foo import commonQueryMain,commonRedisMain,authLoginMain, authUserButtonMain, authMenuListMain,postJobMain,cmmBillidMain,cmmBillInfoMain,cmmBillDelMain
+from .foo import (commonQueryMain,commonRedisMain,cmmBillidMain,cmmBillInfoMain,cmmBillDelMain
+                  ,authLoginMain,ddLoginMain, authUserButtonMain, authMenuListMain,postJobMain
+                  ,ddGetPermissionBraidMain)
 
 # author  :don
 # date    :20240202
@@ -52,6 +54,21 @@ def authLogin(j_args):
 
     j_res['params'] = j_args
     return j_res
+
+@msgWrapper(ldt=20240615,s_func_remark='钉钉登陆')
+def ddLogin(j_args):
+    j_res = ddLoginMain(j_args)
+    s_user = j_args.get('phone_no',0) if j_args.get('phone_no',0) else j_args.get('user_code','-99') 
+    logs = threadLogs(from_code='authLogin', key_code= s_user,args_in= j_args,args_out= j_res)
+    logs.start()
+
+    j_res['params'] = j_args
+    return j_res
+
+
+@msgWrapper(ldt=20240831,s_func_remark='部门获取门店权限')
+def ddGetPermissionBraid(j_args):
+    return ddGetPermissionBraidMain(j_args)
 
 
 @msgWrapper(ldt=20240228,s_func_remark='员工菜单信息')

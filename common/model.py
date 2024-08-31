@@ -6,6 +6,7 @@ from sqlalchemy.dialects.mysql import BIGINT, INTEGER, TINYINT, VARCHAR
 from sqlalchemy.orm import Mapped, declarative_base, mapped_column, relationship
 from sqlalchemy.orm.base import Mapped  # noqa: F811
 # sqlacodegen_v2 --generator declarative mysql+pymysql://root:shtm2023@192.168.10.222:3306/platform --tables common_query
+# sqlacodegen_v2 --generator declarative mysql+pymysql://root:shtm2023@localhost:3306/platform --tables mdm_user
 
 Base = declarative_base()
 
@@ -162,13 +163,13 @@ class MdmDept(Base):
     __tablename__ = 'mdm_dept'
     __table_args__ = {'comment': '主数据-部门表'}
 
-    deptid = mapped_column(INTEGER(11), primary_key=True, comment='部门序号')
-    parentid = mapped_column(INTEGER(11), nullable=False, comment='上级部门')
+    deptid = mapped_column(BIGINT(12), primary_key=True, comment='部门序号')
+    parentid = mapped_column(BIGINT(12), nullable=False, comment='上级部门')
     dept_name = mapped_column(String(36), nullable=False, comment='部门名称')
     ancestors = mapped_column(String(255), nullable=False, comment='祖级列表')
     flow_no = mapped_column(INTEGER(11), nullable=False, server_default=text("'1'"), comment='排序')
     sid = mapped_column(TINYINT(4), nullable=False, server_default=text("'0'"), comment='标记')
-    dept = mapped_column(String(255), Computed("(concat(`deptid`,' ',`dept_name`))", persisted=False), comment='部门')
+    dept = mapped_column(String(255), Computed("(concat(`flow_no`,' ',`dept_name`))", persisted=False), comment='部门')
     ldt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'), comment='最后更 新时间')
     cdt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'))
 
@@ -195,9 +196,11 @@ class MdmUser(Base):
     userid = mapped_column(BIGINT(18), primary_key=True, comment='用户序号 默认手机号')
     user_name = mapped_column(String(36), nullable=False, comment='用户名称')
     nick_name = mapped_column(String(36), nullable=False, server_default=text("''"), comment='昵称')
-    gender = mapped_column(Enum('male', 'female'), nullable=False, comment='男女')
+    gender = mapped_column(Enum('male', 'female', ''), nullable=False, comment='男女')
     url_avatar = mapped_column(String(255), nullable=False, server_default=text("''"), comment='头像地址')
+    mobile = mapped_column(BIGINT(18), nullable=False, server_default=text("'0'"), comment='手机号')
     sid = mapped_column(TINYINT(1), nullable=False, server_default=text("'0'"), comment='环境标识 0不生效 1生产 2测试 3 假删除 5本机')
+    permission_purid = mapped_column(String(255), comment='采购组数据权限')
     ldt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'), comment='最近更 新时间')
     cdt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'), comment='创建时间')
 
@@ -364,6 +367,36 @@ class CtFieldSinan(Base):
     ldt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'), comment='最后更 新时间')
 
     meta_term: Mapped['MetaTerm'] = relationship('MetaTerm', back_populates='ct_field_sinan')
+
+
+
+class DdUser(Base):
+    __tablename__ = 'dd_user'
+    __table_args__ = {'comment': '钉钉-用户信息'}
+
+    user_code = mapped_column(String(36), primary_key=True, comment='对应钉钉userid')
+    user_name = mapped_column(String(255), comment='用户名')
+    work_code = mapped_column(String(255), comment='工号 job_number')
+    work_place = mapped_column(String(255), comment='工作地点')
+    title = mapped_column(String(255), comment='title')
+    manager_user_code = mapped_column(String(255), comment='领导')
+    dept_code = mapped_column(String(255), comment='dept_id')
+    unionid = mapped_column(String(255), comment='unionid')
+    mobile = mapped_column(String(255), comment='手机')
+    json = mapped_column(JSON, comment='返回的json')
+    ldt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'), comment='最后更 新时间')
+    cdt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'), comment='创建时间')
+
+
+class DdDept(Base):
+    __tablename__ = 'dd_dept'
+    __table_args__ = {'comment': '钉钉-部门（非ERP）'}
+
+    parentid = mapped_column(BIGINT(36), nullable=False, comment='父部门')
+    deptid = mapped_column(BIGINT(20), primary_key=True, comment='部门ID')
+    dept_name = mapped_column(String(36), nullable=False, server_default=text("''"), comment='部门名称')
+    permission_braid = mapped_column(String(255), comment='门店数据权限')
+
 
 # # 连接数据库
 # DATABASE_URL = "mysql+pymysql://root:shtm2022@192.168.200.174:3306/grasp"

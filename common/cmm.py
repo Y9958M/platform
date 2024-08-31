@@ -26,13 +26,13 @@ ENV = {0:'Init',1:'Pro',2:'Beta',5:'Dev',6:'Online'}
 LTD = "Copyright© 2023 by SH-Mart"
 IGNORE = {'id','ldt','cdt'}
 DB_LINK = CF.DB_LINK if isinstance(CF.DB_LINK,dict) else {}
-PF_LINK = CF.PF_LINK if isinstance(CF.PF_LINK,dict) else {}
+API_LINK = CF.API_LINK if isinstance(CF.API_LINK,dict) else {}
 SID = CF.SID if isinstance(CF.SID,int) else 0
 ADMIN = CF.ADMIN if isinstance(CF.ADMIN,list) else []
 
 PROJECT = "YM"
 IP = '10.56'
-VER = 240615
+VER = 240831
 
 MESSAGE = {
     "code": 500,

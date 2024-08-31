@@ -1,6 +1,5 @@
 # -*- coding:utf-8 -*-
-import requests
-from .cmm import GLOBAL, MESSAGE, SID, DB_LINK,PF_LINK,HandleLog,engine,rs,pd,datetime,date,decimal,json,reverse_dict,l2d
+from .cmm import GLOBAL, MESSAGE, SID, DB_LINK,HandleLog,engine,rs,pd,datetime,date,decimal,json,reverse_dict,l2d
 
 log = HandleLog(__name__,i_c_level=10,i_f_level=20)
 
@@ -488,7 +487,7 @@ def login(userid):
     log.debug(f">>> {message['info']['fun']} 用户登陆 ")
 
     i_rc = 0
-    s_sql = "SELECT userid,user_name FROM mdm_user WHERE sid = %s AND userid = %s"
+    s_sql = "SELECT userid,user_name,permission_purid FROM mdm_user WHERE sid = %s AND userid = %s"
 
     with engine().connect() as conn:
         try:
@@ -496,6 +495,14 @@ def login(userid):
             i_rc = res.rowcount
             if i_rc:
                 j_ds = dict(res.mappings().all()[0])
+                permission_purid = eval(j_ds.get('permission_purid','[]'))
+                j_ds['permission_purid'] = permission_purid
+                i_ = len(permission_purid)
+                if i_:
+                    s1 = f"({permission_purid[0]})"
+                    s_sql = f"SELECT purid value,pur text FROM mdm_pur WHERE purid in {tuple(permission_purid) if i_>1 else s1 }"
+                    res = conn.exec_driver_sql(s_sql)
+                    j_ds['select_field_pur'] = res.mappings().all()
                 log.debug(j_ds)
                 message.update({'code':200,'count':i_rc,'data':j_ds})
             else:
@@ -505,6 +512,30 @@ def login(userid):
             log.error(message)
         finally:
             return message
+
+# 校验钉钉用户
+def checkDdUser(user_code)->dict:
+    message = MESSAGE.copy()
+    message['info']['fun'] = 'checkDdUser'
+    log.debug(f">>> {message['info']['fun']} 检查通用查询的入参 \n{user_code}  ")
+
+    i_rc = 0
+    s_sql = "SELECT mobile FROM dd_user WHERE user_code = %(CODE)s;"
+
+    try:
+        df = pd.read_sql_query(s_sql,engine(),params={'CODE':user_code})
+        i_rc = df.shape[0]
+    except Exception as e:
+        message.update({'msg':str(e)})
+        log.error(message)
+        return message
+    if i_rc:
+        userid = df['mobile'].head(1).to_list()[0]
+        log.debug(userid,'取得userid')
+        message.update({'code':200,'count':i_rc,'userid':userid})
+    else:
+        message.update({'code':300})
+    return message
 
 
 def menuIds(l_role:list):
@@ -625,64 +656,3 @@ def buttonPermission(roles:str)->dict:
         message.update({'code':200,'count':i_rc,'data':j_})
     return message
 
-
-# 获取Bearer
-def getBearer()->dict:
-    message = MESSAGE.copy()
-    message['info']['fun'] = 'getBearer'
-    log.debug(f">>> {message['info']['fun']}")
-
-    if rs.exists('job_bearer'):
-        s_bearer = rs.get('job_bearer')
-        log.debug(s_bearer,'rs_bearer')
-        message.update({'code':200,'data':s_bearer})
-    else:
-        HEADERS = {'Content-Type':'application/json'}
-        URL = f"http://{PF_LINK['DH']['HOST']}:{PF_LINK['DH']['PORT']}/api/auth/login"
-        JSON = {"username":PF_LINK['DH']['USER'],"password":PF_LINK['DH']['PWD'],"rememberMe":1}
-        res = requests.post(URL, json=JSON, headers = HEADERS)
-        j_res = json.loads(res.content)
-        if j_res['code'] >200:
-            message.update({'msg':j_res['content']})
-            log.error(message,j_res['code'])
-        elif 'content' not in j_res:
-            message.update({'msg':'返回 no content'})
-            log.error(message)
-        elif 'data' not in j_res['content']:
-            message.update({'msg':'返回 no data'})
-            log.error(message)
-        else:
-            s_bearer = j_res['content']['data']
-            log.debug(s_bearer,'xxl_bearer')
-            j_ = cmmRedis('job_bearer',data_list=[s_bearer],time_expire=8*60*60)
-            if j_['code']>200:
-                return j_
-            if rs.exists('job_bearer'):
-                s_bearer = rs.get('job_bearer')
-            message.update({'code':200,'data':s_bearer})
-    return message
-
-
-# 推送JOB任务
-def postJob(jobid:int,j_args={})->dict:
-    message = MESSAGE.copy()
-    message['info']['fun'] = 'postJob'
-    log.debug(f">>> {message['info']['fun']}")
-
-    j_ = getBearer()
-    if j_['code']>200:
-        return j_
-    else:
-        s_bearer = j_['data']
-    
-    HEADERS = {'Content-Type':'application/json','Authorization':s_bearer}
-    URL = f"http://{PF_LINK['DH']['HOST']}:{PF_LINK['DH']['PORT']}/api/job/trigger"
-    JSON = {"jobId":jobid,"executorParam":str(j_args)}
-    log.debug(HEADERS)
-
-    res = requests.post(URL, json=JSON, headers = HEADERS)
-    j_res = json.loads(res.content)
-    message.update(j_res)
-    if j_res['code'] !=200:
-        log.error(message)
-    return message

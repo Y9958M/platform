@@ -8,7 +8,7 @@ from nameko.dependency_providers import DependencyProvider
 from nameko.rpc import rpc
 
 from common.cmm import HandleLog, msgJson
-from common.fac import commonQuery, commonRedis,commonBillid,commonBillInfo,authLogin, authUserButton, authMenuList, postJob
+from common.fac import commonQuery, commonRedis,commonBillid,commonBillInfo,authLogin, authUserButton, authMenuList, postJob,ddLogin,ddGetPermissionBraid
 
 log = HandleLog('Service',i_c_level=30,i_f_level=30)
 # author  :don
@@ -118,6 +118,14 @@ class PlatformService(object):
     @rpc    
     def cAuthUserButton(self,userid:int):
         return msgJson(authUserButton(userid))
+
+    @rpc    
+    def cDdLogin(self,j_args):
+        return msgJson(ddLogin(j_args))
+    
+    @rpc
+    def cDdGetPermissionBraid(self,j_args):
+        return msgJson(ddGetPermissionBraid(j_args))
 
     # RsMdmV1Bra ----------------------------
     @rpc    
