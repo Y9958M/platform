@@ -9,13 +9,14 @@ log = HandleLog(__name__,i_c_level=10,i_f_level=20)
 # author  :don
 # date    :2024-08-30
 # description: 更新相关操作
-se = Session(engine())
+
 
 def setDdUser(j_args)-> dict:
     message = MESSAGE.copy()
     message['info']['fun'] = 'setDdUser'
     log.debug(f">>> {message['info']['fun']}")
 
+    se = Session(engine())
     res =  j_args['result']
     user_code = res.get('userid','')
     manager_user_code = res.get('manager_userid','')
@@ -27,7 +28,7 @@ def setDdUser(j_args)-> dict:
     unionid = res.get('unionid','')
     url_avatar = res.get('avatar','')
     mobile = res.get('mobile','')
-    permission_purid = [11,12,13,14,21,22,23,24,31,32,33,34,35,36,37,38,39,40,41,51,52,53,54,55,56]
+    permission_purid = '[11,12,13,14,21,22,23,24,31,32,33,34,35,36,37,38,39,40,41,51,52,53,54,55,56]'
 
     if len(mobile) == 0:
         log.warning(res,'未取得电话号码 mobile')
@@ -84,6 +85,7 @@ def getPermissionBraid(dept_code)-> dict:
     message['info']['fun'] = 'getPermissionBraid'
     log.debug(f">>> {message['info']['fun']} dept_code:{dept_code}")
 
+    se = Session(engine())
     stmt = select(DdDept).where(DdDept.deptid == dept_code)
     se_dept = se.scalars(stmt).first()
     

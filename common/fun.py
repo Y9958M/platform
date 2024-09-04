@@ -520,7 +520,7 @@ def checkDdUser(user_code)->dict:
     log.debug(f">>> {message['info']['fun']} 检查通用查询的入参 \n{user_code}  ")
 
     i_rc = 0
-    s_sql = "SELECT mobile FROM dd_user WHERE user_code = %(CODE)s;"
+    s_sql = "SELECT a.mobile FROM dd_user a INNER JOIN mdm_user b ON a.mobile = b.userid WHERE user_code = %(CODE)s;"
 
     try:
         df = pd.read_sql_query(s_sql,engine(),params={'CODE':user_code})

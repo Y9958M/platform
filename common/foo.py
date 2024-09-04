@@ -59,12 +59,17 @@ def commonQueryMain(j_args)->dict:
     else:
         j_db_info = j_['data']
 
-    j_.clear()  # 处理 sql_context
-    j_.update(sqlContextToList(sql_context))
-    if  j_['code'] >200:
-        return j_
-    else:
-        l_sql = j_['data']
+    try:
+        j_.clear()  # 处理 sql_context
+        j_.update(sqlContextToList(sql_context))
+        if  j_['code'] >200:
+            return j_
+        else:
+            l_sql = j_['data']
+    except Exception as e:
+        message.update({'msg':str(e),'sql':sql_context})
+        log.error(sql_context)
+        return message
 
     j_.clear()  # 查询拼装
     j_.update(swapContent(l_sql,j_args))
