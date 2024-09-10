@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from .cmm import GLOBAL, MESSAGE, SID, DB_LINK,HandleLog,engine,rs,pd,datetime,date,decimal,json,reverse_dict,l2d
+from .cmm import GLOBAL, MESSAGE, SID, DB_LINK,HandleLog,engine,rs,pd,datetime,date,decimal,reverse_dict,l2d
 
 log = HandleLog(__name__,i_c_level=10,i_f_level=20)
 
@@ -110,7 +110,7 @@ def swapContent(quary_list,paramter_dict)->dict:
                 if sk =='' or sk == 'None' or sk == '[]' or sk =='()':
                     pass
                 else:
-                    sql_result.append(x['v'].replace('?',sk))
+                    sql_result.append(x['v'].replace('?',sk).replace('[','(').replace(']',')'))
             elif 'd' in x:
                 sql_result.append(x['v'].replace('?',x['d']))
             elif 'n' in x:
