@@ -10,13 +10,12 @@ from sqlalchemy.orm.base import Mapped  # noqa: F811
 
 Base = declarative_base()
 
-
 class CommonQuery(Base):
     __tablename__ = 'common_query'
     __table_args__ = {'comment': '通用-查询（只对外项目提供服务 不对自身）'}
 
     sqlid = mapped_column(String(36), primary_key=True, comment='类型_功能_子功能')
-    project = mapped_column(Enum('GRASP', 'DH', 'PTS', 'YM'), nullable=False, comment='项目')
+    project = mapped_column(Enum('GRASP', 'DH', 'PTS', 'YM', 'ADS'), nullable=False, comment='项目')
     sql_name = mapped_column(String(36), nullable=False, server_default=text("''"), comment='SQL名称')
     sql_context = mapped_column(Text, nullable=False, comment='SQL内容')
     remark = mapped_column(String(255), nullable=False, server_default=text("''"), comment='备注说明')
@@ -55,6 +54,16 @@ class CtPermission2role(Base):
     cdt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'), comment='创建时间')
 
 
+class CtUser2dd(Base):
+    __tablename__ = 'ct_user2dd'
+    __table_args__ = {'comment': '对照-用户角色'}
+
+    userid = mapped_column(BIGINT(20), primary_key=True, nullable=False, comment='用户ID')
+    user_code = mapped_column(String(36), primary_key=True, nullable=False, comment='钉钉userid')
+    ldt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'), comment='最后更 新时间')
+    cdt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'), comment='创建时间')
+
+
 class CtUser2dept(Base):
     __tablename__ = 'ct_user2dept'
     __table_args__ = {'comment': '对照-用户部门'}
@@ -75,12 +84,40 @@ class CtUser2role(Base):
     cdt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'), comment='创建时间')
 
 
+class DdDept(Base):
+    __tablename__ = 'dd_dept'
+    __table_args__ = {'comment': '钉钉-部门（非ERP）'}
+
+    parentid = mapped_column(BIGINT(36), nullable=False, comment='父部门')
+    deptid = mapped_column(BIGINT(20), primary_key=True, comment='部门ID')
+    dept_name = mapped_column(String(36), nullable=False, server_default=text("''"), comment='部门名称')
+    permission_braid = mapped_column(String(255), comment='门店权限')
+
+
+class DdUser(Base):
+    __tablename__ = 'dd_user'
+    __table_args__ = {'comment': '钉钉-用户信息'}
+
+    user_code = mapped_column(String(36), primary_key=True, comment='对应钉钉userid')
+    manager_user_code = mapped_column(String(36), comment='领导')
+    user_name = mapped_column(String(255), comment='用户名')
+    work_code = mapped_column(String(255), comment='工号 job_number')
+    work_place = mapped_column(String(255), comment='工作地点')
+    title = mapped_column(String(255), comment='title')
+    dept_code = mapped_column(String(255), comment='dept_id')
+    mobile = mapped_column(String(255), comment='手机')
+    unionid = mapped_column(String(255), comment='unionid')
+    json = mapped_column(JSON, comment='返回的json')
+    ldt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'), comment='最后更 新时间')
+    cdt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'), comment='创建时间')
+
+
 class LogAuthLogin(Base):
     __tablename__ = 'log_auth_login'
     __table_args__ = {'comment': '日志-登录'}
 
     userid = mapped_column(BIGINT(20), nullable=False, server_default=text("'0'"), comment='用户ID')
-    code_from = mapped_column(String(36), nullable=False, server_default=text("''"), comment='来源代码')
+    front_code = mapped_column(String(36), nullable=False, server_default=text("''"), comment='来源代码')
     id = mapped_column(INTEGER(11), primary_key=True, comment='自增序号')
     parm_json = mapped_column(JSON, comment='JSON参数')
     ldt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'), comment='最后更 新时间')
@@ -200,7 +237,7 @@ class MdmUser(Base):
     url_avatar = mapped_column(String(255), nullable=False, server_default=text("''"), comment='头像地址')
     mobile = mapped_column(BIGINT(18), nullable=False, server_default=text("'0'"), comment='手机号')
     sid = mapped_column(TINYINT(1), nullable=False, server_default=text("'0'"), comment='环境标识 0不生效 1生产 2测试 3 假删除 5本机')
-    permission_purid = mapped_column(String(255), comment='采购组数据权限')
+    permission_purid = mapped_column(String(255), comment='采购组权限')
     ldt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'), comment='最近更 新时间')
     cdt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'), comment='创建时间')
 
@@ -210,11 +247,23 @@ class MetaDict(Base):
     __table_args__ = {'comment': '元数据-枚举'}
 
     term_en = mapped_column(String(36), primary_key=True, nullable=False, comment='术语EN')
-    term_key = mapped_column(TINYINT(4), primary_key=True, nullable=False, comment='键')
+    term_key = mapped_column(INTEGER(4), primary_key=True, nullable=False, comment='键')
     term_value = mapped_column(String(36), nullable=False, comment='值')
     ldt = mapped_column(DateTime, nullable=False, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'), comment='最后更新时间')
     enum = mapped_column(String(255), Computed("(concat(`term_en`,'_',`term_key`))", persisted=False), comment='枚举主键')
     term = mapped_column(String(64), Computed("(concat(`term_key`,' ',`term_value`))", persisted=False), comment='术语')
+
+
+class MetaMetrics(Base):
+    __tablename__ = 'meta_metrics'
+    __table_args__ = {'comment': '指标管理'}
+
+    id = mapped_column(INTEGER(11), primary_key=True)
+    metrics_en = mapped_column(String(36), comment='指标英文')
+    metrics_cn = mapped_column(String(36), comment='指标中文')
+    metrics_calibre = mapped_column(String(255), comment='指标口径')
+    from_code = mapped_column(String(36), comment='口径来源')
+    ldt = mapped_column(DateTime)
 
 
 class MetaTable(Base):
@@ -252,10 +301,12 @@ class MetaTerm(Base):
     col_type = mapped_column(Enum('VC36', 'INT', 'D2', 'D3', 'BIGINT', 'TINYINT', 'DATE', 'DATETIME', 'YN', 'VARCHAR', 'D186', 'JSON'), nullable=False, comment='字段类型')
     remark = mapped_column(String(255), nullable=False, server_default=text("''"), comment='术语的含义和使用场景等描述，不超过256字符。')
     ldt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'), comment='最后更 新日期')
+    cdt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'), comment='创建时间')
 
     ct_field_cjy: Mapped[List['CtFieldCjy']] = relationship('CtFieldCjy', uselist=True, back_populates='meta_term')
     ct_field_qweather: Mapped[List['CtFieldQweather']] = relationship('CtFieldQweather', uselist=True, back_populates='meta_term')
     ct_field_sinan: Mapped[List['CtFieldSinan']] = relationship('CtFieldSinan', uselist=True, back_populates='meta_term')
+    ct_field_v1: Mapped[List['CtFieldV1']] = relationship('CtFieldV1', uselist=True, back_populates='meta_term')
 
 
 class MetaWordroot(Base):
@@ -263,7 +314,7 @@ class MetaWordroot(Base):
     __table_args__ = {'comment': '元数据-缩写规则'}
 
     type = mapped_column(Enum('CLASS', 'DEPT', 'FIELD', 'PROJECT', 'RANGE', 'SOFT', ''), nullable=False, comment='类型')
-    word_root_abbreviation = mapped_column(String(12), primary_key=True, comment='\t\r\n词根的缩写，如：amt。不超过12字 符。')
+    word_root_abbreviation = mapped_column(String(12), primary_key=True, comment='词根的缩写，如：amt。不超过12字符。')
     word_root_full_name = mapped_column(String(64), nullable=False, comment='词根的全称，如：amount。不超过64字符。')
     word_root = mapped_column(String(128), nullable=False, comment='词根的任务名称，如：金额。不超过128字符')
     remark = mapped_column(String(255), nullable=False, comment='可添加词根含义和使用场景等描述，不超过256字符。')
@@ -369,33 +420,19 @@ class CtFieldSinan(Base):
     meta_term: Mapped['MetaTerm'] = relationship('MetaTerm', back_populates='ct_field_sinan')
 
 
+class CtFieldV1(Base):
+    __tablename__ = 'ct_field_v1'
+    __table_args__ = (
+        ForeignKeyConstraint(['term_en'], ['meta_term.term_en'], onupdate='CASCADE', name='ct_field_v1_ibfk_1'),
+        Index('_fk', 'term_en'),
+        {'comment': '对照-字段-兼容数仓V1'}
+    )
 
-class DdUser(Base):
-    __tablename__ = 'dd_user'
-    __table_args__ = {'comment': '钉钉-用户信息'}
-
-    user_code = mapped_column(String(36), primary_key=True, comment='对应钉钉userid')
-    user_name = mapped_column(String(255), comment='用户名')
-    work_code = mapped_column(String(255), comment='工号 job_number')
-    work_place = mapped_column(String(255), comment='工作地点')
-    title = mapped_column(String(255), comment='title')
-    manager_user_code = mapped_column(String(255), comment='领导')
-    dept_code = mapped_column(String(255), comment='dept_id')
-    unionid = mapped_column(String(255), comment='unionid')
-    mobile = mapped_column(String(255), comment='手机')
-    json = mapped_column(JSON, comment='返回的json')
+    field = mapped_column(VARCHAR(30), primary_key=True, comment='字段')
+    term_en = mapped_column(String(32), nullable=False, comment='术语')
     ldt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'), comment='最后更 新时间')
-    cdt = mapped_column(DateTime, server_default=text('CURRENT_TIMESTAMP'), comment='创建时间')
 
-
-class DdDept(Base):
-    __tablename__ = 'dd_dept'
-    __table_args__ = {'comment': '钉钉-部门（非ERP）'}
-
-    parentid = mapped_column(BIGINT(36), nullable=False, comment='父部门')
-    deptid = mapped_column(BIGINT(20), primary_key=True, comment='部门ID')
-    dept_name = mapped_column(String(36), nullable=False, server_default=text("''"), comment='部门名称')
-    permission_braid = mapped_column(String(255), comment='门店数据权限')
+    meta_term: Mapped['MetaTerm'] = relationship('MetaTerm', back_populates='ct_field_v1')
 
 
 # # 连接数据库

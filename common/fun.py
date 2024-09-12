@@ -235,7 +235,7 @@ def cmmQueryMysql(s_db:str,s_project:str,s_sql:str,sqlid:str,i_page_num=1,i_page
             i_rc = res.rowcount
             l_ds = res.fetchall()
             l_field = list(res.keys())
-            message.update({'data':{'datalist':l_ds,'fields':l_field,'total':i_total,'pageNum':i_page_num,'pageSize':i_page_size},'code':200,'msg':"SUCESS"})   
+            message.update({'data':{'datalist':l_ds,'fields':l_field,'total':i_total,'pageNum':i_page_num,'pageSize':i_page_size},'code':200})   
         except Exception as e:
             message.update({'remark':s_sql.replace('\r\n',' '),'msg':str(e)})
             log.error(message,'s_sql')
