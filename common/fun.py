@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from .cmm import GLOBAL, MESSAGE, SID, DB_LINK,HandleLog,engine,rs,pd,datetime,date,decimal,reverse_dict,l2d
+from cmm import GLOBAL, MESSAGE, SID, DB_LINK,HandleLog,engine,rs,pd,datetime,date,decimal,reverse_dict,l2d
 
 log = HandleLog(__name__,i_c_level=10,i_f_level=20)
 
@@ -506,7 +506,7 @@ def login(userid):
                 log.debug(j_ds)
                 message.update({'code':200,'count':i_rc,'data':j_ds})
             else:
-                message['msg'] = f"未授权用户 {userid}"            
+                message['msg'] = f"?未授权用户 {userid}"            
         except Exception as e:
             message.update({'msg':str(e)})
             log.error(message)
@@ -563,6 +563,7 @@ def menuIds(l_role:list):
     else:
         message.update({'code':200,'count':i_rc,'data':"","msg":f" 角色 {l_role} 未配置 【菜单】权限"})
     return message
+
 
 
 # 菜单增加 meta: {icon: "MessageBox", title: "超级表格", isLink: "", isHide: false, isFull: false, isAffix: false, isKeepAlive: true}
@@ -656,3 +657,27 @@ def buttonPermission(roles:str)->dict:
         message.update({'code':200,'count':i_rc,'data':j_})
     return message
 
+
+def ddButtonList(roles:str)->dict:
+    message = MESSAGE.copy()
+    message['info']['fun'] = 'ddButtonList'
+    log.debug(f">>> {message['info']['fun']} 返回页面按钮权限 ")
+
+    s_sql = """SELECT menu_code,button_code FROM ct_permission2button_dd a
+INNER JOIN set_permission b ON a.permission_code = b.permission_code
+INNER JOIN ct_permission2role c ON b.permission_code = c.permission_code"""
+    s_sql = f"{s_sql} WHERE c.role_code IN ({roles})" if roles else s_sql
+    s_sql += " GROUP BY a.menu_code,a.button_code;"
+
+    with engine().connect() as conn:
+        res = conn.exec_driver_sql(s_sql)
+        l_ds = res.mappings().all()
+        i_rc = res.rowcount
+        j_ = dict()
+
+        for row in l_ds:
+            j_.update({row['menu_code']:[]})
+        for row in l_ds:
+            j_[row['menu_code']].append(row['button_code'])
+        message.update({'code':200,'count':i_rc,'data':j_})
+    return message

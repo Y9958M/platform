@@ -7,9 +7,11 @@ from eventlet import tpool
 from nameko.dependency_providers import DependencyProvider
 from nameko.rpc import rpc
 
-from common.cmm import HandleLog, msgJson
-from common.fac import commonQuery, commonRedis,commonBillid,commonBillInfo,authLogin, authUserButton, authMenuList, postJob,ddLogin,ddGetPermissionBraid
-
+from cmm import HandleLog, msgWrapper, threadLogs
+# from common.fac import commonQuery, commonRedis,commonBillid,commonBillInfo,authLogin, authUserButton, authMenuList, postJob,ddLogin,ddGetPermissionBraid
+from common.foo import (commonQueryMain,commonRedisMain,cmmBillidMain,cmmBillInfoMain,cmmBillDelMain
+                  ,authLoginMain,ddLoginMain, authUserButtonMain, authMenuListMain,postJobMain
+                  ,ddGetPermissionBraidMain,ddGetPermissionButtonMain)
 log = HandleLog('Service',i_c_level=30,i_f_level=30)
 # author  :don
 # date    :2024-02-02
@@ -87,50 +89,107 @@ class PlatformService(object):
         return f"Hello World!I Am {self.name}: {msg} from Platform producer! 确认已连接"
 
     @rpc    # 公共查询 在API前端转 DICT 
+    @msgWrapper(ldt=20240615,s_func_remark='通用【查询】对外服务')
     def cQ(self, j_args):
-        return msgJson(commonQuery(j_args))
+        j_res = commonQueryMain(j_args)
+        logs = threadLogs(from_code='commonQuery', key_code= j_args.get('sqlid',''),args_in= j_args,args_out= j_res)
+        logs.start()
+        j_res['params'] = j_args
+        return j_res
+
 
     # @rpc    # 公共更新  313起就没了
     # def cU(self, j_args):
     #     return msgJson(commonUpdate(j_args))
 
     @rpc
-    def cPostJob(self,jobid,userid,j_args):
-        return msgJson(postJob(jobid,userid,j_args))
+    @msgWrapper(ldt=20240615,s_func_remark='推送JOB任务')
+    def cPostJob(self,j_args={}):   # jobid,userid,j_args
+        jobid = j_args.get('jobid',0)
+        j_res = postJobMain(jobid,j_args)
+        logs = threadLogs(from_code='postJob', key_code= jobid,args_in= j_args,args_out= j_res)
+        logs.start()
+        j_res['params'] = j_args
+        return j_res
 
     @rpc
-    def cBillid(self,s_bill_key:str,bltid:int): 
-        return msgJson(commonBillid(s_bill_key,bltid))
+    @msgWrapper(ldt=20240228,s_func_remark='通用【单号】')
+    def cBillid(s_bill_key:str,bltid=1):
+        j_res = cmmBillidMain(s_bill_key, bltid=1)
+        j_res['params'] = {'bill_key':s_bill_key,'bltid':bltid}
+        return j_res
+
 
     @rpc    # 默认查询，s_act == del 删除状态0 1 单据
+    @msgWrapper(ldt=20240304,s_func_remark='通用【单号信息】')
     def cBillInfo(self,s_billid:str,s_act='query'): 
-        return msgJson(commonBillInfo(s_billid,s_act))
-    
+        if s_act == 'query':
+            j_res = cmmBillInfoMain(s_billid)
+        elif s_act.lower() == 'del':
+            j_res = cmmBillDelMain(s_billid)
+        else:
+            j_res = {'msg':'未配对通用单据动作'}
+        j_res.update({'billid':s_billid})
+        return j_res
+
+
     # AUTH -------------------- 登录要验证 平台标识 code_from authMenuList 可以限制访问 ----------------------------------------------------------
     @rpc    
+    @msgWrapper(ldt=20240615,s_func_remark='检查登陆')
     def cAuthLogin(self,j_args):
-        return msgJson(authLogin(j_args))
+        j_res = authLoginMain(j_args)
+        s_user = j_args.get('phone_no',0) if j_args.get('phone_no',0) else j_args.get('user_code','-99') 
+        logs = threadLogs(from_code='authLogin', key_code= s_user,args_in= j_args,args_out= j_res)
+        logs.start()
+        j_res['params'] = j_args
+        return j_res
+
 
     @rpc    
+    @msgWrapper(ldt=20240228,s_func_remark='员工菜单信息')
     def cAuthMenu(self,userid:int):
-        return msgJson(authMenuList(userid))
+        j_res = authMenuListMain(userid)
+        j_res.update({'userid':userid})
+        return j_res
 
-    @rpc    
+
+    @rpc  
+    @msgWrapper(ldt=20240228,s_func_remark='员工按钮权限')  
     def cAuthUserButton(self,userid:int):
-        return msgJson(authUserButton(userid))
+        j_res = authUserButtonMain(userid)
+        j_res.update({'userid':userid})
+        return j_res
 
-    @rpc    
+    # DD  ----------------------------
+    @rpc   
+    @msgWrapper(ldt=20240615,s_func_remark='钉钉-登陆 课组权限') 
     def cDdLogin(self,j_args):
-        return msgJson(ddLogin(j_args))
+        j_res = ddLoginMain(j_args)
+        s_user = j_args.get('phone_no',0) if j_args.get('phone_no',0) else j_args.get('user_code','-99') 
+        logs = threadLogs(from_code='authLogin', key_code= s_user,args_in= j_args,args_out= j_res)
+        logs.start()
+        j_res['params'] = j_args
+        return j_res
     
     @rpc
+    @msgWrapper(ldt=20240831,s_func_remark='钉钉-门店权限')
     def cDdGetPermissionBraid(self,j_args):
-        return msgJson(ddGetPermissionBraid(j_args))
+        return ddGetPermissionBraidMain(j_args)
+
+    @rpc
+    @msgWrapper(ldt=20240831,s_func_remark='钉钉-按钮权限')
+    def cDdGetPermissionButton(self,j_args):
+        return ddGetPermissionButtonMain(j_args)
 
     # RsMdmV1Bra ----------------------------
     @rpc    
+    @msgWrapper(ldt=20240615,s_func_remark='通用【缓存】入参 redis_type redis_db rs_name rs_key rs_val proj_name sqlid time_expire')
     def cR(self,j_args):
-        return msgJson(commonRedis(j_args))
+        j_res = commonRedisMain(j_args)
+        logs = threadLogs(from_code='commonQuery', key_code= j_args.get('sqlid',''),args_in= j_args,args_out= j_res)
+        logs.start()
+        j_res['params'] = j_args
+        return j_res
     
     # RETURN ---------------------------------------
 

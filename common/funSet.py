@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from .cmm import engine, MESSAGE,HandleLog,SID
+from cmm import engine, MESSAGE,HandleLog,SID
 from .model import DdUser,MdmUser,DdDept,MdmBra
 from sqlalchemy import insert, select
 from sqlalchemy.orm import Session

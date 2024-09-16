@@ -1,10 +1,10 @@
 
-from .cmm import MESSAGE,ADMIN,HandleLog
+from cmm import MESSAGE,ADMIN,HandleLog
 from .fun import (cmmFetchone,checkSqlContext,ckDbLink,sqlContextToList,swapContent
                   ,cmmQueryMysql,commonQueryMssql,cmmRedis
                   ,checkPhone,rolesList,menuIds,login,menuListPermission,buttonPermission
                   ,billId,billInfo,billDel
-                  ,checkDdUser)
+                  ,checkDdUser,ddButtonList)
 from .funApi import getAccessToken,getDdUser,postJob
 from .funSet import setDdUser,getPermissionBraid
 
@@ -203,7 +203,7 @@ def authLoginMain(j_args):
 
     return login(userid)
 
-# dd用户登录
+# DD用户登录
 def ddLoginMain(j_args):
     message = MESSAGE.copy()
     message['info']['fun'] = 'ddLoginMain'
@@ -304,6 +304,32 @@ def authUserButtonMain(userid):
     if i_rc:
         return buttonPermission(s_role)
     else:
+        return {'code':200,'count':i_rc,'data':"","msg":f" 用户 {userid} 未配置角色 无【按钮】权限"}
+
+# DD【按钮】权限
+def ddGetPermissionButtonMain(j_args):
+    message = MESSAGE.copy()
+    message['info']['fun'] = 'ddGetPermissionButtonMain'
+    log.debug(f">>> {message['info']['fun']} 查人员对应菜单 内容 按钮权限 {j_args}")
+    j_ = dict()
+    userid = j_args.get('userid',0)
+    # log.debug(f"ONE 【菜单】先查 用户 {userid} 是否管理员")
+    if int(userid) in ADMIN:
+        log.warning(userid,"管理员 【ALL按钮】")
+        return ddButtonList()
+    
+    log.debug(userid,"TWO 【按钮】通用 用户 角色关系表 查出用户的所有角色 ")
+    j_ = dict()
+    j_ = rolesList(userid)
+    if j_['code'] > 200:
+        return j_
+    else:
+        s_role = str(j_['l_role'])[1:-1]
+        i_rc = j_['count']
+    if i_rc:
+        return ddButtonList(s_role)
+    else:
+        log.debug('如果没有配置权限 返回空')
         return {'code':200,'count':i_rc,'data':"","msg":f" 用户 {userid} 未配置角色 无【按钮】权限"}
 
 

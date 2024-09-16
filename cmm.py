@@ -206,7 +206,7 @@ def msgWrapper(ldt:int,s_func_remark=''):
             d_time = time.time() - start_time
             j_msg.update(j_res)
             j_msg['info'].update({'start_time':start_strftime,'end_time':end_strftime,'times':round(d_time,2),"ldt":ldt,'func_remark':s_func_remark})
-            return j_msg
+            return msgJson(j_msg)
         return wrapped_function
     return reMsg
 

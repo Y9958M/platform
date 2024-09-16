@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
 import requests
-from .cmm import MESSAGE,API_LINK,HandleLog,rs,json
+from cmm import MESSAGE,API_LINK,HandleLog,rs,json
 from .fun import cmmRedis
 
 log = HandleLog(__name__,i_c_level=10,i_f_level=20)
