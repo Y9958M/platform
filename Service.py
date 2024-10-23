@@ -114,7 +114,9 @@ class PlatformService(object):
 
     @rpc
     @msgWrapper(ldt=20240228,s_func_remark='通用【单号】')
-    def cBillid(s_bill_key:str,bltid=1):
+    def cBillid(self,j_args):
+        s_bill_key = j_args.get('s_bill_key','')
+        bltid = j_args.get('bltid',1)
         j_res = cmmBillidMain(s_bill_key, bltid=1)
         j_res['params'] = {'bill_key':s_bill_key,'bltid':bltid}
         return j_res
@@ -122,7 +124,9 @@ class PlatformService(object):
 
     @rpc    # 默认查询，s_act == del 删除状态0 1 单据
     @msgWrapper(ldt=20240304,s_func_remark='通用【单号信息】')
-    def cBillInfo(self,s_billid:str,s_act='query'): 
+    def cBillInfo(self,j_args): 
+        s_billid = j_args.get('s_billid','')
+        s_act = j_args.get('s_act','query')
         if s_act == 'query':
             j_res = cmmBillInfoMain(s_billid)
         elif s_act.lower() == 'del':

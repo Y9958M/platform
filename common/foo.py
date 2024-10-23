@@ -240,7 +240,7 @@ def ddLoginMain(j_args):
     else:
         return login(j_['userid'])
     
-
+# 管理的门店
 def ddGetPermissionBraidMain(j_args):
     message = MESSAGE.copy()
     message['info']['fun'] = 'ddGetPermissionBraidMain'
