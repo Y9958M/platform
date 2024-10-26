@@ -1,5 +1,5 @@
 
-from cmm import MESSAGE,ADMIN,HandleLog
+from cmm import MESSAGE,ADMIN,SID,HandleLog
 from .fun import (cmmFetchone,checkSqlContext,ckDbLink,sqlContextToList,swapContent
                   ,cmmQueryMysql,commonQueryMssql,cmmRedis
                   ,checkPhone,rolesList,menuIds,login,menuListPermission,buttonPermission
@@ -334,9 +334,9 @@ def ddGetPermissionButtonMain(j_args):
 
 
 # JOB任务推送
-def postJobMain(jobid:int,j_args={}):
+def postJobMain(j_args={}):
     message = MESSAGE.copy()
     message['info']['fun'] = 'postJobMain'
-    log.debug(f">>> {message['info']['fun']} JOBID:{jobid} 参数:{j_args}")
-
-    return postJob(jobid,j_args)
+    log.debug(f">>> {message['info']['fun']}")
+    j_args['sid'] = SID
+    return postJob(j_args)

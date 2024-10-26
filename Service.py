@@ -103,10 +103,10 @@ class PlatformService(object):
     #     return msgJson(commonUpdate(j_args))
 
     @rpc
-    @msgWrapper(ldt=20240615,s_func_remark='推送JOB任务')
+    @msgWrapper(ldt=20241025,s_func_remark='推送JOB任务')
     def cPostJob(self,j_args={}):   # jobid,userid,j_args
         jobid = j_args.get('jobid',0)
-        j_res = postJobMain(jobid,j_args)
+        j_res = postJobMain(j_args)
         logs = threadLogs(from_code='postJob', key_code= jobid,args_in= j_args,args_out= j_res)
         logs.start()
         j_res['params'] = j_args

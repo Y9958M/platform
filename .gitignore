@@ -6,6 +6,7 @@ common/logs
 .history
 .venv
 .vscode
+cookie.pkl
 
 logs/
 instantclient_11_2

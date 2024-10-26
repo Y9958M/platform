@@ -1,5 +1,7 @@
 # -*- coding:utf-8 -*-
 import requests
+import pickle
+import os
 from cmm import MESSAGE,API_LINK,HandleLog,rs,json
 from .fun import cmmRedis
 
@@ -106,27 +108,89 @@ def getBearer()->dict:
     return message
 
 
+# 获取 Cookie
+def getCookie()->dict:
+    message = MESSAGE.copy()
+    message['info']['fun'] = 'getCookie'
+    data={'userName':API_LINK['XXL']['USR'],'password':API_LINK['XXL']['PWD'],}
+    log.debug(f">>> {message['info']['fun']} {data}")
+    # 发送 POST 请求进行登录
+    login_url = f"{API_LINK['XXL']['URL']}/login"
+    log.debug(login_url,'login_url')
+    response = requests.post(login_url, data=data)
+
+    message['code'] = response.status_code
+    res = json.loads(response.text)
+    log.debug(type(res),'res')
+    log.debug(res)
+    if message['code'] > 200:
+        return message
+    else:
+        message['msg'] = res
+        log.debug(type(message['msg']))
+        log.debug(message['msg'])
+        message['code'] =   res.get('code',200)
+        message['remark'] = res.get('content','')
+        message['msg'] =    res.get('msg','')
+    if message['code'] > 200:
+        return message
+    # 保存 Cookie
+    with open('cookie.pkl', 'wb') as f:
+        pickle.dump(response.cookies, f)
+
+    return message
+
 # 推送JOB任务
-def postJob(jobid:int,j_args={})->dict:
+def postJob(j_args={})->dict:
     message = MESSAGE.copy()
     message['info']['fun'] = 'postJob'
-    log.debug(f">>> {message['info']['fun']}")
+    url = f"{API_LINK['XXL']['URL']}/jobinfo/trigger"
+    log.debug(f">>> {message['info']['fun']}, {url}")
 
-    j_ = getBearer()
-    if j_['code']>200:
-        return j_
+    file_path = 'cookie.pkl'
+    if(not os.path.isfile(file_path)):
+        j_ = getCookie()
+        if j_['code'] > 200:
+            message.update(j_)
+            return message
+        
+    # 下次使用 Cookie
+    with open('cookie.pkl', 'rb') as f:
+        cookies = pickle.load(f)
+    # 使用保存的 Cookies 进行后续访问
+    response = requests.post(url, cookies=cookies,data=j_args)
+    message['code'] = response.status_code
+    res = json.loads(response.text)
+    message['msg'] = res
+    if message['code'] > 200:
+        return message
     else:
-        s_bearer = j_['data']
-    
-    HEADERS = {'Content-Type':'application/json','Authorization':s_bearer}
-    URL = f"http://{API_LINK['DH']['HOST']}:{API_LINK['DH']['PORT']}/api/job/trigger"
-    JSON = {"jobId":jobid,"executorParam":str(j_args)}
-    log.debug(HEADERS)
-
-    res = requests.post(URL, json=JSON, headers = HEADERS)
-    j_res = json.loads(res.content)
-    message.update(j_res)
-    if j_res['code'] !=200:
-        log.error(message)
+        message['code'] =   res.get('code',200)
+        message['remark'] = res.get('content','')
+        message['msg'] =    res.get('msg','')
     return message
+
+# 推送JOB任务
+# def postJob(j_args={})->dict:
+#     message = MESSAGE.copy()
+#     message['info']['fun'] = 'postJob'
+#     log.debug(f">>> {message['info']['fun']}")
+
+#     j_ = getBearer()
+#     if j_['code']>200:
+#         return j_
+#     else:
+#         s_bearer = j_['data']
+    
+#     HEADERS = {'Content-Type':'application/json','Authorization':s_bearer}
+#     URL = f"http://{API_LINK['DH']['HOST']}:{API_LINK['DH']['PORT']}/api/job/trigger"
+#     JSON = {"jobId":jobid,"executorParam":str(j_args)}
+#     log.debug(HEADERS)
+
+#     res = requests.post(URL, json=JSON, headers = HEADERS)
+#     j_res = json.loads(res.content)
+#     message.update(j_res)
+#     if j_res['code'] !=200:
+#         log.error(message)
+#     return message
 
