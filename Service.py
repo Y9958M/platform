@@ -125,7 +125,7 @@ class PlatformService(object):
     @rpc    # 默认查询，s_act == del 删除状态0 1 单据
     @msgWrapper(ldt=20240304,s_func_remark='通用【单号信息】')
     def cBillInfo(self,j_args): 
-        s_billid = j_args.get('s_billid','')
+        s_billid = j_args.get('billid','')
         s_act = j_args.get('s_act','query')
         if s_act == 'query':
             j_res = cmmBillInfoMain(s_billid)

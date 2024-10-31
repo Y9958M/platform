@@ -338,5 +338,10 @@ def postJobMain(j_args={}):
     message = MESSAGE.copy()
     message['info']['fun'] = 'postJobMain'
     log.debug(f">>> {message['info']['fun']}")
-    j_args['sid'] = SID
-    return postJob(j_args)
+    jobid = j_args.get('jobid',0)
+    if jobid > 0:
+        args = {'sid':SID,'id':jobid,'executorParam':str(j_args)}
+        return postJob(args)
+    else:
+        message['msg'] = f'{jobid} need jobid'
+        return postJob(message)

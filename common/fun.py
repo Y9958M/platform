@@ -50,7 +50,7 @@ def checkSqlContext(sql_context):
 def sqlContextToList(sql_str)->dict:
     message = MESSAGE.copy()
     message['info']['fun'] = 'utils sqlContextToList'
-    log.debug(sql_str,'sql_str')
+    # log.debug(sql_str,'sql_str')
 
     res = iter(sql_str)
     each_str = ''
@@ -76,7 +76,7 @@ def sqlContextToList(sql_str)->dict:
             sql_list.append(each_str)
             return sql_list
     sql_list.append(each_str)
-    log.debug(sql_list,'sqlContextToList')
+    # log.debug(sql_list,'sqlContextToList')
     message.update({'code':200,'data':sql_list})
     return message
 
@@ -211,26 +211,28 @@ def cmmQueryMysql(s_db:str,s_project:str,s_sql:str,sqlid:str,i_page_num=1,i_page
     message = MESSAGE.copy()
     message['info']['fun'] = 'fun cmmQueryMysql'
     message['info']['sqlid'] = sqlid
-    log.debug(f">>> {message['info']['fun']} 执行语句 :\n{s_sql}")
+    log.debug(f">>> {message['info']['fun']} ")
 
     i_total = 1
     s_total_sql = f"select count(*) AS total from ({s_sql}) t1"
     with engine(s_db,s_project).connect() as conn:
-        if i_page_size > 1 and i_page_num == 1:
-            try:
-                res = conn.exec_driver_sql(s_total_sql)
-                i_total = res.fetchone()[0]
-            except Exception as e:
-                message.update({'msg':str(e)})
-                log.error(message,'s_total_sql')
-                return message
-            if i_total == 0:
-                message.update({'data':{'fields':[],'datalist':[],'total':0,'pageNum':i_page_num,'pageSize':i_page_size},'code':200,'msg':"No Data"})
-                return message
-            elif i_total > i_page_size:
-                s_sql = f"{s_sql} LIMIT {(i_page_num-1) * i_page_size},{i_page_size}"
-
         try:
+            res = conn.exec_driver_sql(s_total_sql)
+            i_total = res.fetchone()[0]
+        except Exception as e:
+            message.update({'msg':str(e)})
+            log.error(message,'s_total_sql')
+            return message
+        
+        # if i_page_size > 1 and i_page_num == 1:    
+
+        if i_total == 0:
+            message.update({'data':{'fields':[],'datalist':[],'total':0,'pageNum':i_page_num,'pageSize':i_page_size},'code':200,'msg':"No Data"})
+            return message
+        
+        try:
+            s_sql = f"{s_sql} LIMIT {(i_page_num-1) * i_page_size},{i_page_size}" if i_total > i_page_size else f"{s_sql} LIMIT {i_total}"
+            log.debug(s_sql,'sql')
             res = conn.exec_driver_sql(s_sql)
             i_rc = res.rowcount
             l_ds = res.fetchall()
