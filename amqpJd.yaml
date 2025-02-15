@@ -1,0 +1,15 @@
+AMQP_URI: 'pyamqp://jd5677:jd5677@117.72.111.58:5677/jd'
+WEB_SERVER_ADDRESS: '117.72.111.58:15677'
+rpc_exchange: 'nameko-rpc'
+max_workers: 2
+parent_calls_tracked: 4
+
+LOGGING:
+    version: 1
+    handlers:
+        console:
+            class: logging.StreamHandler
+    root:
+        level: ERROR
+        handlers: [console]
+        
