@@ -1,5 +1,5 @@
-AMQP_URI: 'pyamqp://beta5677:beta5677@14.103.54.192:5677/beta'
-WEB_SERVER_ADDRESS: '14.103.54.192:15677'
+AMQP_URI: 'pyamqp://pf44:pf44@117.72.111.58:5677/beta'
+WEB_SERVER_ADDRESS: '117.72.111.58:15677'
 rpc_exchange: 'nameko-rpc'
 max_workers: 2
 parent_calls_tracked: 2
