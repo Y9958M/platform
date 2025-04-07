@@ -156,32 +156,32 @@ def checkPhone(phone)->dict:
     return message
 
 
-# 检查数据库连接
-def ckDbLink(s_project='YM'):   # 传入的项目缩写
-    message = MESSAGE.copy()
-    message['info']['fun'] = 'fun ckDbLink'
-    log.debug(s_project,'ckDbLink 0')
+# # 检查数据库连接
+# def ckDbLink(s_project='YM'):   # 传入的项目缩写
+#     message = MESSAGE.copy()
+#     message['info']['fun'] = 'fun ckDbLink'
+#     log.debug(s_project,'ckDbLink 0')
 
-    if s_project == 'YM':
-        s_db_type = 'MYSQL'
-        s_db =      'platform'
-    elif s_project not in DB_LINK['YM']['USE'] and s_project not in DB_LINK:
-        message.update({'msg':f"{s_project} 需要在DB_LINK中对应"})
-        return message
-    elif s_project in DB_LINK['YM']['USE']:
-        s_db_type = DB_LINK['YM']['TYPE']
-        s_db =      DB_LINK['YM']['USE'][s_project]
-        s_project = 'YM'
-    elif 'DB' not in DB_LINK[s_project]:
-        message.update({'msg':f"{s_project} 需要在DB_LINK中配置DB"})
-        return message
-    else:
-        s_db_type = DB_LINK[s_project]['TYPE']
-        s_db =      DB_LINK[s_project]['DB']
-        s_project = s_project
-    message.update({'code':200,'data':{'TYPE':s_db_type,'DB':s_db,'PROJECT':s_project}})
-    log.debug(s_project,'ckDbLink 1')
-    return message
+#     if s_project == 'YM':
+#         s_db_type = 'MYSQL'
+#         s_db =      'platform'
+#     elif s_project not in DB_LINK['YM']['USE'] and s_project not in DB_LINK:
+#         message.update({'msg':f"{s_project} 需要在DB_LINK中对应"})
+#         return message
+#     elif s_project in DB_LINK['YM']['USE']:
+#         s_db_type = DB_LINK['YM']['TYPE']
+#         s_db =      DB_LINK['YM']['USE'][s_project]
+#         s_project = 'YM'
+#     elif 'DB' not in DB_LINK[s_project]:
+#         message.update({'msg':f"{s_project} 需要在DB_LINK中配置DB"})
+#         return message
+#     else:
+#         s_db_type = DB_LINK[s_project]['TYPE']
+#         s_db =      DB_LINK[s_project]['DB']
+#         s_project = s_project
+#     message.update({'code':200,'data':{'TYPE':s_db_type,'DB':s_db,'PROJECT':s_project}})
+#     log.debug(s_project,'ckDbLink 1')
+#     return message
 
 
 # 平台 按系统的通用查询

@@ -1,4 +1,3 @@
-
 import logging
 import colorlog
 import os
@@ -7,32 +6,34 @@ import threading
 import itertools
 import decimal
 import json
-import redis
 import sqlalchemy
 import requests
 from logging.handlers import RotatingFileHandler
 from datetime import date, datetime
 from sqlalchemy.pool import QueuePool
 from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
-import importlib
+# import importlib
 import platform
 import pandas as pd
+import linkinfo
+
+# from dist import linkinfo
 # import numpy as np
 # & d:/CODE/platform/.venv/Scripts/pip.exe install openpyxl
 # 要提供给其它项目调用的共用方法
 s_os_path = 'D:/home' if platform.system() == 'Windows' else '/home'
-CF = importlib.machinery.SourceFileLoader('config', f'{s_os_path}/platform/config.py').load_module()
-ENV = {0:'Init',1:'Pro',2:'Beta',5:'Dev',6:'Online'}
+ENV = linkinfo.ENV
 LTD = "Copyright© 2023 by SH-Mart"
 IGNORE = {'id','ldt','cdt'}
-DB_LINK = CF.DB_LINK if isinstance(CF.DB_LINK,dict) else {}
-API_LINK = CF.API_LINK if isinstance(CF.API_LINK,dict) else {}
-SID = CF.SID if isinstance(CF.SID,int) else 0
-ADMIN = CF.ADMIN if isinstance(CF.ADMIN,list) else []
-
 PROJECT = "YM"
+DB_LINK = linkinfo.DB_LINK if isinstance(linkinfo.DB_LINK,dict) else {}
+API_LINK = linkinfo.API_LINK if isinstance(linkinfo.API_LINK,dict) else {}
+ADMIN = [18550994992]
+
 IP = '10.56'
-VER = 240831
+VER = 250406    # 迁移数据链接
+SID = 5
+rs      = linkinfo.rs(SID)
 
 MESSAGE = {
     "code": 500,
@@ -40,7 +41,7 @@ MESSAGE = {
     "info":{
         "sid":  SID,
         "project":PROJECT,
-        "client":f"{ENV[SID]} {IP}",
+        "client":f"{ENV[str(SID)]} {IP}",
         "ver":VER,
         "author":'姚鸣'},
 }
@@ -53,16 +54,6 @@ logging.thread = None  # type: ignore
 log_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'logs')  # log_path为存放日志的路径
 if not os.path.exists(log_path): os.mkdir(log_path)  # 若不存在logs文件夹，则自动创建  # noqa: E701
 s_log_file = os.path.join(log_path,f"{PROJECT.lower()}-{datetime.now().strftime('%Y%m%d')}.log")
-
-
-rs = redis.Redis(connection_pool=redis.ConnectionPool(
-    host    =   DB_LINK['REDIS']['HOST'],
-    password =  DB_LINK['REDIS']['PWD'],
-    port =      DB_LINK['REDIS']['PORT'],
-    db =        DB_LINK['REDIS']['DB'],
-    decode_responses=True,
-    encoding='utf-8'))
-
 
 # 初始化配置 数据从后台取 初始化的时候 取项目库JSON数据# 连接后台 启动级异常 不需要返回 直接记日志
 class HandleLog:
@@ -123,8 +114,9 @@ class HandleLog:
 
 log = HandleLog("main")
 
-def setGlobal()->dict:
-    s_conn = f"mysql+pymysql://{DB_LINK['YM']['USER']}:{DB_LINK['YM']['PWD']}@{DB_LINK['YM']['HOST']}:{DB_LINK['YM']['PORT']}/platform"
+def setGlobal(SID=SID)->dict:
+    pf = DB_LINK[ENV[str(SID)]]
+    s_conn = f"mysql+pymysql://{pf['USER']}:{pf['PWD']}@{pf['HOST']}:{pf['PORT']}/platform"
     log.debug(s_conn,'s_conn')
     s_ = "SELECT json_values FROM set_global WHERE project_name = 'GLOBAL' AND project_key = 'SETUP';"
     try:
@@ -161,12 +153,58 @@ def l2d(j_ds):
     return j_ds
 
 
-def engine(DB='platform',LINK=""):
-    LINK = LINK if LINK else 'YM'
-    JDBC ={'MYSQL':'mysql+pymysql','MSSQL':'mssql+pymssql'}
-    PARM ={'MYSQL':'','MSSQL':'?charset=cp936'}
-    s_ = f"{JDBC[DB_LINK[LINK]['TYPE']]}://{DB_LINK[LINK]['USER']}:{DB_LINK[LINK]['PWD']}@{DB_LINK[LINK]['HOST']}:{DB_LINK[LINK]['PORT']}/{DB}{PARM[DB_LINK[LINK]['TYPE']]}"
-    return sqlalchemy.create_engine(s_, poolclass=QueuePool, max_overflow=10, pool_size=24, pool_timeout=30, pool_recycle=3600)
+def engine(DB='platform',LINK_NAME=SID):
+    DB = str(DB).lower()
+    LINK_NAME = str(LINK_NAME).upper()
+    LINK_NAME = ENV[LINK_NAME] if LINK_NAME in ENV else LINK_NAME
+    JDBC = {'MYSQL':'mysql+pymysql','MSSQL':'mssql+pymssql','IMPALA':'impala','DORIS':'doris+pymysql'}
+    PARM = {'MYSQL':'','MSSQL':'?charset=cp936','IMPALA':'','DORIS':'?charset=utf8mb4'}
+    TYPE = str(DB_LINK[LINK_NAME].get('TYPE'))
+    ARGS = {}
+    if TYPE in JDBC:
+        USE = DB_LINK[LINK_NAME].get('USE',[])
+        if DB not in USE:
+            raise ValueError(f"可用数据库名[{DB}]未配置!")
+        else:
+            if TYPE == 'IMPALA':
+                s_conn = f"{JDBC[TYPE]}://{DB_LINK[LINK_NAME]['HOST']}:{DB_LINK[LINK_NAME]['PORT']}/{DB}{PARM[TYPE]}"
+            else:
+                s_conn = f"{JDBC[TYPE]}://{DB_LINK[LINK_NAME]['USER']}:{DB_LINK[LINK_NAME]['PWD']}@{DB_LINK[LINK_NAME]['HOST']}:{DB_LINK[LINK_NAME]['PORT']}/{DB}{PARM[TYPE]}"
+            if TYPE == 'MSSQL':
+                ARGS.update({"timeout": 30,"tds_version":"7.0"})
+            return sqlalchemy.create_engine(s_conn, poolclass=QueuePool, max_overflow=10, pool_size=24, pool_timeout=30, pool_recycle=3600, connect_args=ARGS)
+    else:
+        raise ValueError(f"未配置 数据库[{LINK_NAME}]连接类型！")
+    # s_ = f"{JDBC[DB_LINK[LINK]['TYPE']]}://{DB_LINK[LINK]['USER']}:{DB_LINK[LINK]['PWD']}@{DB_LINK[LINK]['HOST']}:{DB_LINK[LINK]['PORT']}/{DB}{PARM[DB_LINK[LINK]['TYPE']]}"
+    # return sqlalchemy.create_engine(s_, poolclass=QueuePool, max_overflow=10, pool_size=24, pool_timeout=30, pool_recycle=3600)
+
+# 返回数据库连接
+def ckDbLink(LINK_NAME,SID=SID)->dict:
+    if LINK_NAME is None:
+        return {'code':500,'msg':'LINK_NAME is None'}
+    SID = str(SID)
+    LINK_NAME = str(LINK_NAME).upper()
+    if SID in ENV:
+        if LINK_NAME == '':
+            data = {'TYPE':DB_LINK[LINK_NAME].get('TYPE',''),'DB':'platform','PROJECT':LINK_NAME}
+            return {'code':200,'data':data}
+        elif LINK_NAME in DB_LINK: # 在项目中
+            if DB_LINK[LINK_NAME].get('TYPE','') in ['MYSQL','MSSQL']:
+                data = {'TYPE':DB_LINK[LINK_NAME].get('TYPE',''),'DB':LINK_NAME.lower(),'PROJECT':LINK_NAME}
+                return {'code':200,'data':data}
+            else:
+                return {'code':500,'msg':f'{LINK_NAME} TYPE 不支持的'}
+        else:
+            db = LINK_NAME.lower()
+            db = 'platform' if db in ['ym'] else db   # 转换
+            PROJ = ENV[SID]
+            if db in DB_LINK[PROJ].get('USE',[]):
+                data = {'TYPE':DB_LINK[PROJ].get('TYPE',''),'DB':db,'PROJECT':PROJ}
+                return {'code':200,'data':data}
+            else:
+                return {'code':500,'msg':f'{db} not in {PROJ}'}
+    else:
+        return {'code':500,'msg':'未正确传入SID'}
 
 
 # -*- 把Date、DateTime类型数据转换成兼容Json的格式 -*-  json.dumps(result,cls=DateEncoder.DateEncoder) # 调用自定义类

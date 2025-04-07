@@ -1,13 +1,12 @@
 /__pycache__/
 common/__pycache__
 common/logs
-
+dist/__pycache__
 .mypy_cache
 .history
 .venv
 .vscode
 cookie.pkl
-
 logs/
 instantclient_11_2
 

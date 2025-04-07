@@ -1,6 +1,6 @@
 
-from cmm import MESSAGE,ADMIN,SID,HandleLog
-from .fun import (cmmFetchone,checkSqlContext,ckDbLink,sqlContextToList,swapContent
+from cmm import MESSAGE,ADMIN,SID,HandleLog,ckDbLink
+from .fun import (cmmFetchone,checkSqlContext,sqlContextToList,swapContent
                   ,cmmQueryMysql,commonQueryMssql,cmmRedis
                   ,checkPhone,rolesList,menuIds,login,menuListPermission,buttonPermission
                   ,billId,billInfo,billDel
